@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>0001 - Frontend Overview & Structure</title>
+    <link rel="stylesheet" href="../assets/base.css">
+</head>
+<body>
+    <h1>0001 - Frontend Overview & Structure</h1>
+    <p><a href="../MISSION.md">Mission</a></p>
+
+    <h2>Lesson Goal</h2>
+    <p>Grasp the Angular frontend's architecture, entry points, folder organization, and core concepts like standalone components and signals.</p>
+
+    <h2>Entry Points: Where the App Starts</h2>
+    <ul>
+        <li><code>client/src/main.ts</code>: Bootstraps the Angular app.</li>
+        <li><code>client/src/app/app.config.ts</code>: Configures providers (e.g., <code>HttpClient</code>, router) for dependency injection.</li>
+        <li><code>client/src/app/app.ts</code>: Root component rendered in <code>index.html</code>.</li>
+        <li><code>client/src/app/app.routes.ts</code>: Defines all application routes.</li>
+    </ul>
+    <div style="background:#f8f9fa;padding:1rem;border-radius:8px;font-family:monospace;white-space:pre;overflow-x:auto;max-height:200px">
+┌─────────────────────────────────────────────────────────────────────┐
+│                    APP INITIALIZATION FLOW                          │
+├─────────────────────────────────────────────────────────────────────┤
+│ 1. main.ts bootstraps Angular app                                 │
+│ 2. app.config.ts provides HttpClient, Router                      │
+│ 3. app.ts creates root component                                 │
+│ 4. app.routes.ts defines navigation paths                        │
+│ 5. Router activates first route based on URL                     │
+│ 6. Components render, services inject via DI                     │
+│ 7. Signals update, UI reflects state changes                      │
+└─────────────────────────────────────────────────────────────────────┘
+</div>
+
+    <h2>Folder Structure: The Project's Blueprint</h2>
+    <p>The frontend is organized like a factory, with specialized departments:</p>
+    <table>
+        <tr><th>Folder</th><th>Purpose</th><th>Analogy</th></tr>
+        <tr>
+            <td><code>components/</code></td>
+            <td>Reusable UI parts (buttons, cards, modals)</td>
+            <td>LEGO bricks</td>
+        </tr>
+        <tr>
+            <td><code>pages/</code></td>
+            <td>Full feature pages (dashboard, jobs)</td>
+            <td>Assembled LEGO sets</td>
+        </tr>
+        <tr>
+            <td><code>layouts/</code></td>
+            <td>Page templates (headers, footers)</td>
+            <td>Blueprints</td>
+        </tr>
+        <tr>
+            <td><code>services/</code></td>
+            <td>API clients and business logic</td>
+            <td>Workshop tools</td>
+        </tr>
+        <tr>
+            <td><code>models/</code></td>
+            <td>TypeScript interfaces for UI data</td>
+            <td>Instruction manuals</td>
+        </tr>
+        <tr>
+            <td><code>guards/</code></td>
+            <td>Route protection (auth, roles)</td>
+            <td>Security checkpoints</td>
+        </tr>
+        <tr>
+            <td><code>environments/</code></td>
+            <td>Configuration (API URLs)</td>
+            <td>Control panel</td>
+        </tr>
+        <tr>
+            <td><code>styles/</code></td>
+            <td>Global Tailwind CSS</td>
+            <td>Paint shop</td>
+        </tr>
+    </table>
+    <div style="background:#f8f9fa;padding:1rem;border-radius:8px;font-family:monospace;white-space:pre;overflow-x:auto;max-height:300px">
+┌─────────────────────────────────────────────────────────────────────┐
+│                    FRONTEND PROJECT STRUCTURE                      │
+├─────────────────────────────────────────────────────────────────────┤
+│ app/                                                       │
+│ ├─ components/    ← Reusable UI parts (buttons, cards)           │
+│ ├─ pages/         ← Full pages (dashboard, jobs)               │
+│ ├─ layouts/       ← Page templates (auth, base, dashboard)      │
+│ ├─ services/      ← API clients, business logic                  │
+│ ├─ models/        ← TypeScript interfaces (Job, User)           │
+│ ├─ guards/        ← Route protection (auth, role)              │
+│ └─ styles/        ← Global CSS (Tailwind)                        │
+│                                                              │
+│ environments/    ← Config (apiBaseUrl)                          │
+│                                                              │
+│ Each folder follows the same pattern:                         │
+│ ├─ components/   ← *.component.ts, *.component.html           │
+│ ├─ pages/        ← *.page.ts, *.page.html                       │
+│ └─ services/     ← @Injectable({providedIn: 'root'})            │
+└─────────────────────────────────────────────────────────────────────┘
+</div>
+
+    <h2>Key Concepts: How It All Works</h2>
+    <ul>
+        <li><strong>Standalone Components:</strong> No NgModules needed—import dependencies directly where used.</li>
+        <li><strong>Signals:</strong> Reactive state management for efficient updates. Use <code>signal()</code> for state, <code>computed()</code> for derived values.</li>
+        <li><strong><code>inject()</code>:</strong> Simplifies dependency injection without constructor parameters in some cases.</li>
+    </ul>
+    <div style="background:#f8f9fa;padding:1rem;border-radius:8px;font-family:monospace;white-space:pre;overflow-x:auto;max-height:200px">
+┌─────────────────────────────────────────────────────────────────────┐
+│                        SIGNALS DATA FLOW                          │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│   Component (Dashboard)                                           │
+│   ├─ inject(Service)                                              │
+│   ├─ Service updates signal:                                     │
+│   │   └─ signal.set(newData)                                      │
+│   └─ Component template:                                         │
+│       └─ {{ jobs() }}                                            │
+│                                                                      │
+│   Signal flow:                                                   │
+│   └─ Service signal → Component signal (via computed())           │
+│                                                                      │
+│   Example:                                                       │
+│   ├─ jobsSignal = signal<Job[]>([])                              │
+│   ├─ jobs = jobsSignal.asReadonly()                              │
+│   ├─ template: <div *ngFor="let job of jobs()">...</div>           │
+│   └─ When jobsSignal changes → jobs() updates → UI re-renders       │
+│                                                                      │
+│   Benefits:                                                      │
+│   └─ No manual subscribe/unsubscribe                              │
+│   └─ Automatic updates on signal changes                          │
+│   └─ Performance: O(1) access                                     │
+└─────────────────────────────────────────────────────────────────────┘
+</div>
+
+    <h2>Simple Explanation</h2>
+    <p>Imagine the frontend as a <strong>restaurant</strong>:</p>
+    <ul>
+        <li><strong>Components:</strong> Dishes (e.g., a menu card, order button).</li>
+        <li><strong>Services:</strong> Chefs handling orders (API calls) and kitchen logic.</li>
+        <li><strong>Routes:</strong> Different sections (dining area, checkout) protected by guards (reservations required).</li>
+        <li><strong>Signals:</strong> Waitstaff updating the menu board when the kitchen changes specials.</li>
+    </ul>
+    <p>Everything connects to serve customers (users) seamlessly! 🍽️</p>
+
+    <p>Next: <a href="0002-components-services-data-flow.html">0002 - Components, Services & Data Flow</a></p>
+</body>
+</html>
+

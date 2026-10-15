@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>0003 - Routing, Layouts & Guards</title>
+    <link rel="stylesheet" href="../assets/base.css">
+</head>
+<body>
+    <h1>0003 - Routing, Layouts & Guards</h1>
+    <p><a href="0002-components-services-data-flow.html">Previous</a></p>
+
+    <h2>Lesson Goal</h2>
+    <p>Master navigation, page structure, and access control in the Angular frontend.</p>
+
+    <h2>Routes: Defining Paths</h2>
+    <p><code>app.routes.ts</code> is the roadmap of the app. It defines:</p>
+    <ul>
+        <li><strong>Paths:</strong> URLs like <code>'dashboard'</code>, <code>'jobs'</code>, <code>'login'</code>.</li>
+        <li><strong>Components:</strong> Which page component to load.</li>
+        <li><strong>Layouts:</strong> Optional wrapper components (e.g., <code>dashboardLayout</code> for authenticated pages).</li>
+        <li><strong>Guards:</strong> <code>canActivate</code> functions to control access.</li>
+    </ul>
+    <div style="background:#f8f9fa;padding:1rem;border-radius:8px;font-family:monospace;white-space:pre;overflow-x:auto;max-height:150px">
+┌─────────────────────────────────────────────────────────────────────┐
+│                     ROUTE DEFINITIONS                              │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│   // app.routes.ts                                                │
+│   export const routes: Routes = [                                 │
+│     {                                                           │
+│       path: 'dashboard',                                         │
+│       loadComponent: () => import('./pages/dashboard').then(m=>m.DashboardComponent),
+│       canActivate: [authGuard]                                    │
+│     },                                                           │
+│     {                                                           │
+│       path: 'jobs',                                              │
+│       loadChildren: () => import('./pages/jobs').then(m=>m.JobsRouting),
+│       canActivate: [authGuard]                                    │
+│     },                                                           │
+│     {                                                           │
+│       path: 'login',                                             │
+│       loadComponent: () => import('./pages/auth/login').then(m=>m.LoginComponent),
+│       canActivate: [guestGuard]                                   │
+│     }                                                            │
+│   ];                                                            │
+│                                                                      │
+│   Routes flow:                                                   │
+│   └─ URL matches path → canActivate checks → load component → render  │
+└─────────────────────────────────────────────────────────────────────┘
+</div>
+
+    <h2>Layouts: Page Templates</h2>
+    <p>Layouts provide consistent structures for groups of pages:</p>
+    <ul>
+        <li><strong>base-layout:</strong> Public pages (homepage, about) with a simple header.</li>
+        <li><strong>auth-layout:</strong> Login/signup pages with a centered form and background image.</li>
+        <li><strong>dashboard-layout:</strong> Authenticated app pages with sidebar navigation and header.</li>
+    </ul>
+    <div style="background:#f8f9fa;padding:1rem;border-radius:8px;font-family:monospace;white-space:pre;overflow-x:auto;max-height:200px">
+┌─────────────────────────────────────────────────────────────────────┐
+│                         LAYOUT WRAPPERS                            │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│   // Layout component structure                                    │
+│   @Component({                                                   │
+│     selector: 'app-dashboard-layout',                           │
+│     standalone: true,                                             │
+│     imports: [CommonModule, RouterOutlet],                      │
+│     template: `                                                   │
+│       <header>...</header>                                       │
+│       <main>                                                     │
+│         <router-outlet></router-outlet>                          │
+│       </main>                                                    │
+│       <footer>...</footer>                                       │
+│     `                                                           │
+│   })                                                           │
+│   export class DashboardLayoutComponent {}                       │
+│                                                                      │
+│   // Route config uses layout                                     │
+│   {                                                             │
+│     path: 'dashboard',                                           │
+│     component: DashboardComponent,                               │
+│     providers: [DashboardLayoutComponent],                       │
+│     template: `<app-dashboard-layout><app-dashboard></app-dashboard-layout>`
+│   }                                                              │
+│                                                                      │
+│   Layouts ensure consistent UI across pages (same header/footer)  │
+└─────────────────────────────────────────────────────────────────────┘
+</div>
+
+    <h2>Guards: Access Control</h2>
+    <p>Guards protect routes based on authentication and roles:</p>
+    <ul>
+        <li><code>auth.guard.ts</code>: Checks if the user is logged in. Redirects to <code>/login</code> if not.</li>
+        <li><code>role.guard.ts</code>: Ensures the user's role (candidate/employer) matches the route's requirements.</li>
+    </ul>
+    <pre><code>// auth.guard.ts Example
+export const authGuard: CanActivateFn = (route, state) => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+  return authService.isAuthenticated() 
+    ? true 
+    : router.createUrlTree(['/login']);
+};</code></pre>
+    <div style="background:#f8f9fa;padding:1rem;border-radius:8px;font-family:monospace;white-space:pre;overflow-x:auto;max-height:100px;">
+<div style="border:1px solid #dee2e6;padding:1rem;margin:0.5rem 0;">
+<div style="font-weight:bold;margin-bottom:0.5rem;">GUARD CHECK SEQUENCE</div>
+<pre style="margin:0;"><code>User attempts to access '/admin'
+    │
+    ▼
+Router matches route → calls canActivate guards
+    │
+    ▼
+auth.guard.ts: checks localStorage.user
+    │
+    └─ true → continue to next guard
+    │
+    └─ false → redirect to '/login'
+    │
+    ▼
+role.guard.ts: checks user.role === 'admin'
+    │
+    └─ true → allow access
+    │
+    └─ false → redirect to '/dashboard'
+
+End of guard chain: Route loads if all guards pass
+
+Key Points:
+├─ Guards run in order defined in canActivate
+├─ First guard that returns false prevents access
+├─ Guards can return URLs for redirects
+└─ Guards run on every route navigation</code></pre>
+</div>
+</div>
+
+    <h2>Simple Explanation</h2>
+    <p>Imagine a <strong>hotel</strong>:</p>
+    <ul>
+        <li><strong>Routes:</strong> Room numbers (URLs) like <code>/dashboard</code> (Suite 101).</li>
+        <li><strong>Layouts:</strong> Room types—standard (base), luxury (dashboard), or lobby (auth).</li>
+        <li><strong>Guards:</strong> Security checks. Keycard required for guest floors (auth guard), VIP lounge needs a special key (role guard).</li>
+    </ul>
+    <p>Routing ensures guests find their rooms, layouts standardize decor, and guards keep areas secure! 🏨</p>
+
+<h2>Knowledge Check (Multiple Questions)</h2>
+    <div class="note">
+        <p><strong>1. Active Recall:</strong> Where are all the routes for the application defined?</p>
+        <details>
+            <summary>Click to reveal answer</summary>
+            <ul>
+                <li>In <code>client/src/app/app.routes.ts</code>.</li>
+            </ul>
+        </details>
+    </div>
+    <div class="note">
+        <p><strong>2. Active Recall:</strong> What is the difference between <code>auth.guard.ts</code> and <code>role.guard.ts</code>?</p>
+        <details>
+            <summary>Click to reveal answer</summary>
+            <ul>
+                <li>Auth Guard: Verifies the user is logged in at all.</li>
+                <li>Role Guard: Verifies the logged-in user has the specific role (e.g. Employer or Candidate) required for that page.</li>
+            </ul>
+        </details>
+    </div>
+    <div class="note">
+        <p><strong>3. Active Recall:</strong> How does a Layout component like <code>DashboardLayoutComponent</code> know where to render the child route's content?</p>
+        <details>
+            <summary>Click to reveal answer</summary>
+            <ul>
+                <li>Using the <code>&lt;router-outlet&gt;&lt;/router-outlet&gt;</code> directive in its template.</li>
+            </ul>
+        </details>
+    </div>
+    <div class="note">
+        <p><strong>4. Active Recall:</strong> What happens if a guard returns a <code>UrlTree</code> instead of <code>true</code>?</p>
+        <details>
+            <summary>Click to reveal answer</summary>
+            <ul>
+                <li>The current navigation is cancelled, and the user is redirected to the URL specified by the <code>UrlTree</code> (e.g. redirecting to <code>/login</code>).</li>
+            </ul>
+        </details>
+    </div>
+
+    <p>Next: <a href="0004-http-models-auth-state.html">0004 - HTTP, DTO/UI Mapping, Auth State</a></p>
+</body>
+</html>
+

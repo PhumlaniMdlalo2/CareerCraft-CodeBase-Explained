@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>0004 - Frontend Consumption: How It Connects</title>
+    <link rel="stylesheet" href="../assets/base.css">
+</head>
+<body>
+    <h1>0004 - Frontend Consumption: How It Connects</h1>
+    <p><a href="../MISSION.md">Back to Mission</a> | <a href="0003-full-request-flow-example.html">Previous</a></p>
+
+    <h2>Lesson Goal</h2>
+    <p>Understand how the Angular frontend talks to the backend: its structure, API calls, state management, and authentication flow.</p>
+
+    <h2>Frontend Structure: The Big Picture</h2>
+    <p>The frontend is organized like a factory, with specialized departments:</p>
+    <table>
+        <tr><th>Directory</th><th>Purpose</th><th>Example</th></tr>
+        <tr>
+            <td><code>services/</code></td>
+            <td>API clients (singletons)</td>
+            <td><code>JobService.ts</code>, <code>AuthService.ts</code></td>
+        </tr>
+        <tr>
+            <td><code>models/</code></td>
+            <td>UI data shapes</td>
+            <td><code>models.ts</code> (Job, Application interfaces)</td>
+        </tr>
+        <tr>
+            <td><code>components/</code></td>
+            <td>Reusable UI parts</td>
+            <td><code>job-card.component.ts</code>, <code>toast.component.ts</code></td>
+        </tr>
+        <tr>
+            <td><code>pages/</code></td>
+            <td>Full pages</td>
+            <td><code>dashboard.page.ts</code>, <code>jobs.page.ts</code></td>
+        </tr>
+        <tr>
+            <td><code>guards/</code></td>
+            <td>Route protection</td>
+            <td><code>auth.guard.ts</code> (checks login)</td>
+        </tr>
+        <tr>
+            <td><code>environments/</code></td>
+            <td>Configuration</td>
+            <td><code>apiBaseUrl: 'http://localhost:8080/api'</code></td>
+        </tr>
+    </table>
+    <div style="background:#f8f9fa;padding:1rem;border-radius:8px;font-family:monospace;white-space:pre;overflow-x:auto;">
+<pre style="margin:0;"><code>src/app/
+├── services/       ──▶ API calls (JobService, AuthService)
+├── models/         ──▶ TypeScript interfaces (models.ts)
+├── components/     ──▶ Reusable UI widgets (job-card, toast)
+├── pages/          ──▶ Route targets (dashboard, jobs, profile)
+├── layouts/        ──▶ Templates (dashboard-layout, auth-layout)
+└── guards/         ──▶ Route access control (auth.guard, role.guard)</code></pre>
+</div>
+
+    <h2>HttpClient: Talking to the Backend</h2>
+    <p>Configured in <code>app.config.ts</code>, <code>HttpClient</code> is injected into services to make API calls using the <code>apiBaseUrl</code> from environment config.</p>
+    <pre><code>// Example from JobService
+private http = inject(HttpClient);
+private apiBaseUrl = environment.apiBaseUrl;
+
+getOpenPositions() {
+  return this.http.get&lt;BackendJob[]&gt;(`${this.apiBaseUrl}/jobs/findOpenPositions`);
+}</code></pre>
+    <div style="background:#f8f9fa;padding:1rem;border-radius:8px;font-family:monospace;white-space:pre;overflow-x:auto;">
+<pre style="margin:0;"><code>Component ──▶ Service (injects HttpClient) ──▶ http.get(apiBaseUrl + endpoint)
+    ▲                                                     │
+    │                                                     ▼
+    └────────── updates Signal / Observable ◀───── Spring Boot REST Controller</code></pre>
+</div>
+
+    <h2>DTO Mapping: Backend to UI</h2>
+    <p>Backend data (DTOs) is mapped to UI models to add computed fields and simplify display:</p>
+    <table>
+        <tr><th>Backend DTO</th><th>UI Model</th></tr>
+        <tr>
+            <td><code>{ jobId: 'j1', title: 'Dev', employer: { userId: 'u1', companyName: 'Tech Corp' } }</code></td>
+            <td><code>{ id: 'j1', title: 'Dev', company: 'Tech Corp', companyInitial: 'TC', companyColor: '#FF5733' }</code></td>
+        </tr>
+    </table>
+    <pre><code>// Snippet from job.service.ts
+mapJob(backendJob: BackendJob): Job {
+  return {
+    id: backendJob.jobId!,
+    company: backendJob.employer?.companyName || 'Unknown Company',
+    companyInitial: getInitials(backendJob.employer?.companyName),
+    // ... other fields
+  };
+}</code></pre>
+
+    <h2>State Management: Signals in Action</h2>
+    <p>Services use Angular signals to manage state, making data reactive and efficient:</p>
+    <ul>
+        <li><code>AuthService</code> holds the current user (persisted to <code>localStorage</code>).</li>
+        <li><code>ApplicationService</code> tracks applications and applied job IDs.</li>
+        <li>Components subscribe to signals to update the UI automatically.</li>
+    </ul>
+    <div style="background:#f8f9fa;padding:1rem;border-radius:8px;font-family:monospace;white-space:pre;overflow-x:auto;">
+<pre style="margin:0;"><code>Service State (Signal) ──▶ set(data) / update(fn) ──▶ UI Component auto-renders
+        ▲
+        └────── HttpClient response / user interaction</code></pre>
+</div>
+
+    <h2>Authentication Flow: How Users Log In</h2>
+    <ol>
+        <li><strong>Signup/Login:</strong> AuthService posts to <code>/jobseekers/create</code> or <code>/users/login</code>.</li>
+        <li><strong>Fetch Profile:</strong> After login, it fetches role-specific data from <code>/jobseekers/read/{userId}</code> or <code>/employers/read/{userId}</code>.</li>
+        <li><strong>Route Guards:</strong> <code>auth.guard.ts</code> checks if the user is logged in; <code>role.guard.ts</code> checks the role (jobseeker/employer).</li>
+        <li><strong>Scoped Requests:</strong> Services like <code>ApplicationService</code> use the current user ID from AuthService to load user-specific data.</li>
+    </ol>
+    <div style="background:#f8f9fa;padding:1rem;border-radius:8px;font-family:monospace;white-space:pre;overflow-x:auto;">
+<pre style="margin:0;"><code>1. Form Submit ──▶ POST /users/login ──▶ Returns userId
+2. Fetch Profile ──▶ GET /jobseekers/read/{userId} ──▶ Returns full profile
+3. Save State ──▶ userSignal.set() + localStorage.setItem('careerwise_auth_user')
+4. Navigate ──▶ auth.guard checks AuthService.isAuthenticated() ──▶ Load Dashboard</code></pre>
+</div>
+
+    <h2>Simple Explanation</h2>
+    <p>Imagine the frontend as a <strong>restaurant dining area</strong> and the backend as the <strong>kitchen</strong>:</p>
+    <ul>
+        <li><strong>Menu (API):</strong> The waiter (HttpClient) uses the menu (endpoints) to take your order (request).</li>
+        <li><strong>Kitchen (Backend):</strong> Prepares the meal (processes data) and sends it back.</li>
+        <li><strong>Plating (DTO Mapping):</strong> The waiter adds garnishes (computed fields) before serving.</li>
+        <li><strong>Reservations (Auth):</strong> The host (AuthService) checks your reservation (login) and seats you (grants access).</li>
+        <li><strong>Waitstaff (Signals):</strong> Busily update the menu board (UI) when the kitchen sends new info.</li>
+    </ul>
+    <p>Everything connects through the service team (API) to give you a seamless dining experience! 🍽️</p>
+
+    <h2>Key Takeaways</h2>
+    <ul>
+        <li>Frontend uses Angular signals for reactive state management.</li>
+        <li>DTO mapping isolates backend changes from the UI.</li>
+        <li>AuthService acts as the gateway for user-specific data.</li>
+        <li>Environment config ensures API URLs are centralized.</li>
+    </ul>
+
+    <h2>Knowledge Check</h2>
+    <div class="note">
+        <p><strong>4. Active Recall:</strong> Where is the logged-in user state stored in the frontend, and how do route guards use it?</p>
+        <details>
+            <summary>Click to reveal answer</summary>
+            <ul>
+                <li>State: Stored in Angular signals inside <code>AuthService</code> and persisted in <code>localStorage</code> under <code>careerwise_auth_user</code>.</li>
+                <li>Guards: <code>auth.guard.ts</code> and <code>role.guard.ts</code> check <code>AuthService</code> state to allow or redirect navigation.</li>
+            </ul>
+        </details>
+    </div>
+
+    <p>Next: <a href="0005-auth-resume-notifications-errors.html">0005 - Auth, Resume, Notifications & Errors</a></p>
+</body>
+</html>
+

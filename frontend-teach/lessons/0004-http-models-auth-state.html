@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>0004 - HTTP, DTO/UI Mapping, Auth State</title>
+    <link rel="stylesheet" href="../assets/base.css">
+</head>
+<body>
+    <h1>0004 - HTTP, DTO/UI Mapping, Auth State</h1>
+    <p><a href="0003-routing-guards.html">Previous</a></p>
+
+    <h2>Lesson Goal</h2>
+    <p>Understand how the frontend communicates with the backend, maps data, and manages authentication state.</p>
+
+    <h2>Environment Config: Centralized API URL</h2>
+    <p><code>environments/environment.ts</code> defines <code>apiBaseUrl: 'http://localhost:8080/api'</code>. This ensures all API calls use the correct base URL.</p>
+    <div style="background:#f8f9fa;padding:1rem;border-radius:8px;font-family:monospace;white-space:pre;overflow-x:auto;max-height:80px;">
+<div style="border:1px solid #dee2e6;padding:1rem;margin:0.5rem 0;">
+<div style="font-weight:bold;margin-bottom:0.5rem;">ENVIRONMENT CONFIG</div>
+<pre style="margin:0;"><code>// environments/environment.ts
+export const environment = {
+  production: false,
+  apiBaseUrl: 'http://localhost:8080/api'
+};</code></pre>
+</div>
+</div>
+
+    <h2>DTO vs. UI Model: Data Transformation</h2>
+    <p>Backend returns DTOs (Data Transfer Objects), which are mapped to UI-friendly models:</p>
+    <table>
+        <tr><th>Backend DTO</th><th>UI Model</th></tr>
+        <tr>
+            <td><code>{ jobId: 'j1', title: 'Developer', employer: { userId: 'u1', companyName: 'Tech Corp' } }</code></td>
+            <td><code>{ id: 'j1', title: 'Developer', company: 'Tech Corp', companyInitial: 'TC', companyColor: '#FF5733' }</code></td>
+        </tr>
+    </table>
+    <p><strong>Mapping Logic:</strong> Services transform DTOs using helper functions (e.g., <code>mapJob()</code>) to add computed fields like initials and colors.</p>
+    <div style="background:#f8f9fa;padding:1rem;border-radius:8px;font-family:monospace;white-space:pre;overflow-x:auto;max-height:150px;">
+<div style="border:1px solid #dee2e6;padding:1rem;margin:0.5rem 0;">
+<div style="font-weight:bold;margin-bottom:0.5rem;">DTO → UI MODEL MAPPING</div>
+<pre style="margin:0;"><code>Backend DTO                              → UI Model
+{
+  jobId: "123",
+  title: "Software Engineer",
+  employer: { companyName: "TechCorp" },
+  requirements: ["Java", "Angular"]
+}
+                │
+                ▼ (Frontend mapJob() transform)
+Frontend UI Model:
+{
+  id: "123",
+  title: "Software Engineer",
+  company: "TechCorp",
+  companyInitial: "T",
+  companyColor: "#2563eb",
+  tags: ["Java", "Angular"]
+}</code></pre>
+</div>
+</div>
+
+    <h2>HttpClient: Making API Calls</h2>
+    <p>Angular's <code>HttpClient</code> is configured in <code>app.config.ts</code> via <code>provideHttpClient()</code>. Services inject it to make HTTP requests:</p>
+    <pre><code>// Example: Fetching jobs
+this.http.get&lt;BackendJob[]&gt;(`${this.apiBaseUrl}/jobs/findOpenPositions`).pipe(
+  map(backendJobs => backendJobs.map(bj => this.mapJob(bj)))
+);</code></pre>
+    <p>Supports <code>get</code>, <code>post</code>, <code>put</code>, <code>delete</code> methods. Errors are handled via RxJS operators like <code>catchError</code>.</p>
+    <div style="background:#f8f9fa;padding:1rem;border-radius:8px;font-family:monospace;white-space:pre;overflow-x:auto;max-height:200px;">
+<div style="border:1px solid #dee2e6;padding:1rem;margin:0.5rem 0;">
+<div style="font-weight:bold;margin-bottom:0.5rem;">HTTP REQUEST SEQUENCE</div>
+<pre style="margin:0;"><code>1. Service injects HttpClient from app.config.ts
+2. Service adds auth token to headers (if user logged in)
+3. HttpClient sends request to ${this.apiBaseUrl}/api/endpoint
+4. Backend processes request, validates, queries DB
+5. Backend returns JSON response (200 OK)
+6. HttpClient emits response to service's .pipe()
+7. Service maps DTO → UI model
+8. Service updates signal
+9. Component template renders mapped data</code></pre>
+</div>
+</div>
+
+    <h2>Auth State: Managing Login/Session</h2>
+    <p><code>AuthService</code> uses Angular signals and <code>localStorage</code> to track the current user:</p>
+    <ul>
+        <li><code>userSignal</code>: Holds the current user (reactive state).</li>
+        <li><code>localStorage</code>: Persists the user under <code>careerwise_auth_user</code> for session survival.</li>
+        <li><code>isAuthenticated()</code>: Helper method to check login status.</li>
+        <li><code>role()</code>: Returns the user's role (candidate/employer).</li>
+    </ul>
+    <p><strong>Login Flow:</strong> After <code>/users/login</code>, fetch the role-specific profile (e.g., <code>/jobseekers/read/{userId}</code>) to enrich the user object.</p>
+    <div style="background:#f8f9fa;padding:1rem;border-radius:8px;font-family:monospace;white-space:pre;overflow-x:auto;max-height:150px;">
+<div style="border:1px solid #dee2e6;padding:1rem;margin:0.5rem 0;">
+<div style="font-weight:bold;margin-bottom:0.5rem;">AUTH STATE MACHINE</div>
+<pre style="margin:0;"><code>States:
+├─ LOGGED_OUT  ← No user in localStorage
+├─ LOGGED_IN    ← User data in localStorage, signals updated
+└─ LOADING      ← Fetching profile after login
+
+Transitions:
+├─ LOGIN_SUCCESS → Fetch profile → LOGGED_IN
+├─ LOGIN_ERROR   → Show toast → LOGGED_OUT
+├─ LOGOUT       → Clear localStorage → LOGGED_OUT
+└─ AUTH_CHECK    → Verify token → LOGGED_IN/LOGGED_OUT</code></pre>
+</div>
+</div>
+
+    <h2>Simple Explanation</h2>
+    <p>Imagine three roles in a library:</p>
+    <ul>
+        <li><strong>Translator (DTO Mapping):</strong> Converts complex books (backend DTOs) into easy-to-read summaries (UI models).</li>
+        <li><strong>Messenger (HttpClient):</strong> Runs between the reading room (frontend) and archives (backend) to fetch books.</li>
+        <li><strong>Bouncer (Auth State):</strong> Checks IDs (login status) and VIP badges (roles) to allow access to restricted sections.</li>
+    </ul>
+    <p>Together, they ensure you get the right information securely! 📚</p>
+
+    <p>Next: <a href="0005-forms-ui-patterns-tailwind.html">0005 - Forms, UI Patterns & Tailwind</a></p>
+</body>
+</html>
+

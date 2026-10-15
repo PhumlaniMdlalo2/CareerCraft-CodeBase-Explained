@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>0002 - API Endpoints & Request Flow</title>
+    <link rel="stylesheet" href="../assets/base.css">
+</head>
+<body>
+    <h1>0002 - API Endpoints & Request Flow</h1>
+    <p><a href="../MISSION.md">Back to Mission</a> | <a href="../NOTES.md">Notes</a> | <a href="0001-backend-basics-and-architecture.html">Previous</a></p>
+
+    <h2>Lesson Goal</h2>
+    <p>Understand how the frontend communicates with the backend via REST API endpoints. Map the end-to-end flow of a typical request (e.g., fetching jobs, submitting applications).</p>
+
+    <h2>Base URL & Setup</h2>
+    <ul>
+        <li>Backend API base: <code>http://localhost:8080/api</code> (Defined in <code>client/src/environments/environment.ts</code>)</li>
+        <li>Angular HttpClient uses <code>environment.apiBaseUrl</code></li>
+    </ul>
+    <div style="background:#f8f9fa;padding:1rem;border-radius:8px;font-family:monospace;white-space:pre;overflow-x:auto;">
+<pre style="margin:0;"><code>[Frontend: Port 4200] ───────── /api/* ─────────▶ [Backend: Port 8080]
+  (environment.ts)                                 (REST Controllers)</code></pre>
+</div>
+
+    <h2>Jobs Example: End-to-End Flow</h2>
+    <h3>1. Frontend Trigger</h3>
+    <p>User visits the Dashboard/Jobs page. Angular’s <code>JobService</code> is called to fetch open positions.</p>
+
+    <h3>2. API Call</h3>
+    <p><strong>HTTP Method:</strong> GET<br><strong>Endpoint:</strong> <code>/api/jobs/findOpenPositions</code><br><strong>Request:</strong> No parameters needed.</p>
+
+    <h3>3. Backend Processing</h3>
+    <p><strong>Controller:</strong> <code>JobController.java</code> handles the request.<br><strong>Service:</strong> <code>IJobService</code> → <code>JobServiceImpl</code> fetches data from the database.<br><strong>Repository:</strong> <code>IJobRepository</code> queries the <code>jobs</code> table.</p>
+    <div style="background:#f8f9fa;padding:1rem;border-radius:8px;font-family:monospace;white-space:pre;overflow-x:auto;">
+<pre style="margin:0;"><code>UI Component
+    │
+    ▼ (invokes method)
+JobService (Angular)
+    │
+    ▼ (HTTP GET /api/jobs/findOpenPositions)
+JobController (Spring Boot @RestController)
+    │
+    ▼ (delegates logic)
+JobServiceImpl (Service Layer)
+    │
+    ▼ (queries)
+JobRepository (Spring Data JPA)
+    │
+    ▼ (SQL SELECT)
+MySQL Database</code></pre>
+</div>
+
+    <h3>4. Response & Mapping</h3>
+    <p><strong>Backend Returns:</strong> <code>BackendJob</code> objects (includes nested <code>employer</code> data, <code>requirements[]</code>, dates as strings).<br><strong>Frontend Maps:</strong> Converts <code>BackendJob</code> to UI-friendly <code>Job</code> model via <code>mapJob()</code> (adds <code>companyInitial</code>, <code>companyColor</code>, <code>postedTime</code>, extracts tags).</p>
+    <div style="background:#f8f9fa;padding:1rem;border-radius:8px;font-family:monospace;white-space:pre;overflow-x:auto;">
+<pre style="margin:0;"><code>Backend DTO (Raw API shape):
+{
+  jobId: "123",
+  title: "Software Engineer",
+  employer: { companyName: "TechCorp" },
+  requirements: ["Java", "Angular"]
+}
+                │
+                ▼ (Frontend mapJob() transform)
+Frontend UI Model:
+{
+  id: "123",
+  title: "Software Engineer",
+  company: "TechCorp",
+  companyInitial: "T",
+  companyColor: "#2563eb",
+  tags: ["Java", "Angular"]
+}</code></pre>
+</div>
+
+    <h2>Key Endpoints</h2>
+    <h3>Jobs</h3>
+    <table>
+        <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+        <tr><td>GET</td><td><code>/api/jobs/findOpenPositions</code></td><td>Fetch all open jobs</td></tr>
+        <tr><td>GET</td><td><code>/api/jobs/search</code></td><td>Search jobs by criteria</td></tr>
+        <tr><td>POST</td><td><code>/api/jobs/create</code></td><td>Create a new job (employer)</td></tr>
+    </table>
+
+    <h3>Job Applications</h3>
+    <table>
+        <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+        <tr><td>POST</td><td><code>/api/applications/apply</code></td><td>Submit a job application</td></tr>
+        <tr><td>GET</td><td><code>/api/applications/jobseeker/{id}</code></td><td>Get applications for a job seeker</td></tr>
+    </table>
+
+    <h3>Auth Flow</h3>
+    <ol>
+        <li><strong>Login:</strong> <code>POST /api/users/login</code> → Returns <code>userId</code>.</li>
+        <li><strong>Enrich Profile:</strong> <code>GET /api/jobseekers/read/{userId}</code> (for job seekers) or <code>GET /api/employers/read/{userId}</code> (for employers).</li>
+    </ol>
+    <div style="background:#f8f9fa;padding:1rem;border-radius:8px;font-family:monospace;white-space:pre;overflow-x:auto;">
+<pre style="margin:0;"><code>1. Login: POST /api/users/login (Credentials) ──▶ UserID
+2. Enrich: GET /api/jobseekers/read/{UserID}  ──▶ Full Profile</code></pre>
+</div>
+
+    <h2>Simple Explanation</h2>
+    <p>Imagine the backend is a <strong>restaurant kitchen</strong> and the frontend is the <strong>waiter</strong>.</p>
+    <ul>
+        <li><strong>Menu (API Endpoints):</strong> The waiter uses the menu (e.g., "/api/jobs") to tell the kitchen what you want.</li>
+        <li><strong>Order Flow:</strong> You say "Get open jobs" → Waiter tells kitchen → Kitchen fetches from pantry (DB) → Waiter brings food (data) → You eat (see jobs)!</li>
+        <li><strong>Special Requests:</strong> Like applying for a job? The waiter sends your application to the kitchen, which saves it in the pantry.</li>
+    </ul>
+    <p><strong>Moral:</strong> APIs are like waiters and chefs working together to get you what you need! 🍔↔️🍴</p>
+
+    <h2>Key Takeaways</h2>
+    <ul>
+        <li>Frontend talks to backend via HttpClient with base URL <code>/api</code></li>
+        <li>Controllers expose RESTful endpoints; services contain business logic</li>
+        <li>Frontend often maps backend DTOs to UI models for display</li>
+        <li>Cross-origin allowed (<code>@CrossOrigin</code>) - dev setup</li>
+    </ul>
+
+    <h2>Knowledge Check (Multiple Questions)</h2>
+    <div class="note">
+        <p><strong>1. Active Recall:</strong> Where is the <code>apiBaseUrl</code> defined in the frontend, and why does the <code>JobService</code> map the backend DTO to a UI model?</p>
+        <details>
+            <summary>Click to reveal answer</summary>
+            <ul>
+                <li>Defined in: <code>client/src/environments/environment.ts</code></li>
+                <li>Mapping Reason: To calculate UI-specific data (like <code>companyInitial</code> or <code>postedTime</code>) that the backend doesn't provide directly.</li>
+            </ul>
+        </details>
+    </div>
+    <div class="note">
+        <p><strong>2. Active Recall:</strong> Which HTTP method and endpoint are used to submit a job application?</p>
+        <details>
+            <summary>Click to reveal answer</summary>
+            <ul>
+                <li>Method: <code>POST</code></li>
+                <li>Endpoint: <code>/api/applications/apply</code></li>
+            </ul>
+        </details>
+    </div>
+    <div class="note">
+        <p><strong>3. Active Recall:</strong> How does the auth flow work after a user logs in via <code>POST /api/users/login</code>?</p>
+        <details>
+            <summary>Click to reveal answer</summary>
+            <ul>
+                <li>Returns a <code>userId</code>.</li>
+                <li>Frontend calls <code>GET /api/jobseekers/read/{userId}</code> or <code>GET /api/employers/read/{userId}</code> to fetch profile details.</li>
+            </ul>
+        </details>
+    </div>
+    <div class="note">
+        <p><strong>4. Active Recall:</strong> What annotation allows cross-origin requests from the frontend to the backend during development?</p>
+        <details>
+            <summary>Click to reveal answer</summary>
+            <ul>
+                <li><code>@CrossOrigin</code> on REST Controllers</li>
+            </ul>
+        </details>
+    </div>
+    <div class="note">
+        <p><strong>2. Active Recall:</strong> Where is the <code>apiBaseUrl</code> defined in the frontend, and why does the <code>JobService</code> map the backend DTO to a UI model?</p>
+        <details>
+            <summary>Click to reveal answer</summary>
+            <ul>
+                <li>Defined in: <code>client/src/environments/environment.ts</code></li>
+                <li>Mapping Reason: To calculate UI-specific data (like <code>companyInitial</code> or <code>postedTime</code>) that the backend doesn't provide directly.</li>
+            </ul>
+        </details>
+    </div>
+
+    <p>Next: <a href="0003-full-request-flow-example.html">0003 - Full Request Flow Example (Apply for a Job)</a></p>
+</body>
+</html>
+

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>0007 - Testing, Navigation & Responsiveness</title>
+    <link rel="stylesheet" href="../assets/base.css">
+</head>
+<body>
+    <h1>0007 - Testing, Navigation & Responsiveness</h1>
+    <p><a href="0006-resume-uploads-advanced-state-debugging.html">Previous</a></p>
+
+    <h2>Lesson Goal</h2>
+    <p>Master navigation patterns, responsive design, and testing to ensure a robust, user-friendly frontend.</p>
+
+    <h2>Navigation: Moving Between Pages</h2>
+    <p>Angular provides two ways to navigate:</p>
+    <ul>
+        <li><strong>Declarative (RouterLink):</strong> HTML links in templates. Used for menus, buttons, and cards.</li>
+        <li><strong>Programmatic (Router Service):</strong> JavaScript navigation in components/services.</li>
+    </ul>
+    <pre><code>// RouterLink Example (template)
+<nav>
+  <a routerLink="/dashboard">Dashboard</a>
+  <a routerLink="/jobs" [queryParams]="{ search: 'engineer' }">Search Jobs</a>
+</nav>
+
+// Router Service Example (component)
+constructor(private router: Router) {}
+
+navigateToJob(jobId: string) {
+  this.router.navigate(['/jobs', jobId], { queryParams: { view: 'details' } });
+}</code></pre>
+    <div style="background:#f8f9fa;padding:1rem;border-radius:8px;font-family:monospace;white-space:pre;overflow-x:auto;max-height:150px;">
+<div style="border:1px solid #dee2e6;padding:1rem;margin:0.5rem 0;">
+<div style="font-weight:bold;margin-bottom:0.5rem;">NAVIGATION FLOW</div>
+<pre style="margin:0;"><code>Template (HTML):
+├─ <a routerLink="/dashboard">Dashboard</a>
+├─ <a routerLink="/jobs" [queryParams]="{ search: 'engineer' }">Search</a>
+└─ <button (click)="navigateTo('/profile')">Profile</button>
+
+Component (TS):
+├─ inject(Router) → navigate(['/jobs', jobId])
+├─ inject(Router) → navigateByUrl('/dashboard')
+└─ inject(Router) → createUrlTree(['/login'])
+
+Guard Flow:
+└─ CanActivate checks auth/role → true/false → allow/deny navigation</code></pre>
+</div>
+</div>
+
+    <h2>Responsive Design: Adapting to Screens</h2>
+    <p>Tailwind's responsive classes adjust layouts based on screen size:</p>
+    <ul>
+        <li><code>sm: ...</code> (640px+)</li>
+        <li><code>md: ...</code> (768px+)</li>
+        <li><code>lg: ...</code> (1024px+)</li>
+        <li><code>xl: ...</code> (1280px+)</li>
+    </ul>
+    <pre><code>// Job Card Grid - Responsive
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+  @for (job of jobs(); track job.id) {
+    <app-job-card [job]="job" />
+  }
+</div></code></pre>
+    <div style="background:#f8f9fa;padding:1rem;border-radius:8px;font-family:monospace;white-space:pre;overflow-x:auto;max-height:200px;">
+<div style="border:1px solid #dee2e6;padding:1rem;margin:0.5rem 0;">
+<div style="font-weight:bold;margin-bottom:0.5rem;">RESPONSIVE GRID</div>
+<pre style="margin:0;"><code>// Mobile (xs): 1 column
+<div class="grid grid-cols-1 gap-4">
+  <!-- Content -->
+</div>
+
+// Small (sm): 2 columns
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+  <!-- Content -->
+</div>
+
+// Medium (md): 3 columns
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+  <!-- Content -->
+</div>
+
+// Large (lg): 4 columns
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+  <!-- Content -->
+</div>
+
+// Extra Large (xl): 5 columns
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+  <!-- Content -->
+</div></code></pre>
+</div>
+</div>
+
+    <h2>Testing: Ensuring Quality</h2>
+    <p>Angular tests use <code>TestBed</code> to create test environments:</p>
+    <ul>
+        <li><strong>Component Tests:</strong> Verify template rendering and interactions.</li>
+        <li><strong>Service Tests:</strong> Mock dependencies and test methods.</li>
+        <li><strong>Integration Tests:</strong> Test full user flows.</li>
+    </ul>
+    <pre><code>// Example Component Test
+specify('DashboardComponent', () => {
+  const fixture = TestBed.createComponent(DashboardComponent);
+  const component = fixture.componentInstance;
+  
+  component.recommended.set(mockJobs);
+  fixture.detectChanges();
+  
+  expect(fixture.debugElement.query(By.css('.job-card'))).toBeTruthy();
+});</code></pre>
+    <p>Run tests with: <code>npm test</code> in the <code>client</code> directory.</p>
+    <div style="background:#f8f9fa;padding:1rem;border-radius:8px;font-family:monospace;white-space:pre;overflow-x:auto;max-height:150px;">
+<div style="border:1px solid #dee2e6;padding:1rem;margin:0.5rem 0;">
+<div style="font-weight:bold;margin-bottom:0.5rem;">TESTING WORKFLOW</div>
+<pre style="margin:0;"><code>1. Describe test scenario (describe block)
+2. Set up TestBed → compile component/service
+3. Arrange: inject dependencies, set inputs
+4. Act: call method or trigger event
+5. Assert: verify output/state
+
+Example:
+TestBed.createComponent(DashboardComponent)
+  .overrideTemplate(DashboardComponent, '<div>...</div>')
+  .overrideProviders([{provide: JobService, useValue: mockService}])
+  .compileComponents();
+
+expect(component.recommended()).toEqual(expectedJobs);
+</code></pre>
+</div>
+</div>
+
+    <h2>Quick Checklist</h2>
+    <ul>
+        <li><strong>Navigation:</strong> Use <code>RouterLink</code> for menus, <code>Router</code> for logic.</li>
+        <li><strong>Responsive:</strong> Apply Tailwind breakpoints consistently.</li>
+        <li><strong>Testing:</strong> Test components, services, and integration flows.</li>
+        <li><strong>Best Practices:</strong> Follow existing patterns in the codebase.</li>
+    </ul>
+
+    <h2>Simple Explanation</h2>
+    <p>Imagine a <strong>hotel lobby</strong>:</p>
+    <ul>
+        <li><strong>Navigation:</strong> Signs pointing to rooms (routes), elevators (Router) to move between floors.</li>
+        <li><strong>Responsive Design:</strong> Rooms adapt—single bed on mobile (phone), double bed on desktop (large screen).</li>
+        <li><strong>Testing:</strong> Housekeepers checking every room before guests arrive (automated tests ensure quality).</li>
+    </ul>
+    <p>Everything works together to give guests a smooth stay! 🏨</p>
+
+    <h2>Knowledge Check</h2>
+    <div class="note">
+        <p><strong>7. Active Recall:</strong> What are the two ways to navigate in Angular, and how does Tailwind handle responsive grid layouts?</p>
+        <details>
+            <summary>Click to reveal answer</summary>
+            <ul>
+                <li>Navigation: Declarative (<code>RouterLink</code> in templates) and Programmatic (<code>Router</code> service in TypeScript).</li>
+                <li>Responsive Grids: Using Tailwind breakpoint prefixes like <code>sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4</code> to change column counts based on screen width.</li>
+            </ul>
+        </details>
+    </div>
+
+    <p>Back to <a href="../reference/frontend-quick-ref.html">Quick Reference</a></p>
+</body>
+</html>
+

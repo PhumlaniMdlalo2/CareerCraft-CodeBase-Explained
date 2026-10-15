@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>0002 - Components, Services & Data Flow</title>
+    <link rel="stylesheet" href="../assets/base.css">
+</head>
+<body>
+    <h1>0002 - Components, Services & Data Flow</h1>
+    <p><a href="0001-frontend-overview-structure.html">Previous</a></p>
+
+    <h2>Lesson Goal</h2>
+    <p>Understand how components fetch data from services, process it, and render it using Angular's standalone components and signals.</p>
+
+    <h2>Example: Job Listing Flow</h2>
+    <ol>
+        <li>
+            <strong>Component:</strong> <code>job-card.component.ts</code> displays a single job. Pages like <code>dashboard.page.ts</code> or <code>jobs.page.ts</code> use this reusable component.
+        </li>
+        <li>
+            <strong>Service:</strong> <code>job.service.ts</code> handles API calls (e.g., <code>getOpenPositions()</code>) using Angular's <code>HttpClient</code>.
+        </li>
+        <li>
+            <strong>Model:</strong> <code>models.ts</code> defines the <code>Job</code> interface. The service maps backend DTOs to this UI model.
+        </li>
+    </ol>
+    <div style="background:#f8f9fa;padding:1rem;border-radius:8px;font-family:monospace;white-space:pre;overflow-x:auto;max-height:200px">
+┌─────────────────────────────────────────────────────────────────────┐
+│                  COMPONENT → SERVICE → API → SIGNAL → UI              │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│   Step 1: Component requests data                                 │
+│   └─ <app-dashboard [filter]="filter()" (input)                   │
+│                                                                      │
+│   Step 2: Service receives input, calls API                       │
+│   └─ getJobs(filter) → HttpClient.get('/api/jobs')                 │
+│                                                                      │
+│   Step 3: API returns JSON                                         │
+│   └─ Response: [{id:1,title:'Dev',company:'TechCorp'}, ...]         │
+│                                                                      │
+│   Step 4: Service maps DTO → UI model                              │
+│   └─ BackendJob → Job (add companyInitial, color, etc.)            │
+│                                                                      │
+│   Step 5: Service updates signal                                   │
+│   └─ jobsSignal.set(mappedJobs)                                   │
+│                                                                      │
+│   Step 6: Component template renders                               │
+│   └─ <div *ngFor="let job of jobs()">...</div>                     │
+│                                                                      │
+│   Reactivity: When filter changes → Step 2 → Step 6 auto-update     │
+└─────────────────────────────────────────────────────────────────────┘
+</div>
+
+    <h2>Service Pattern: Fetching Data</h2>
+    <p>Services are singletons that centralize API logic. They use <code>HttpClient</code> to call backend endpoints and map responses to UI models.</p>
+    <pre><code>@Injectable({ providedIn: 'root' })
+export class JobService {
+  private http = inject(HttpClient);
+  private apiBaseUrl = environment.apiBaseUrl;
+
+  getOpenPositions(): Observable&lt;Job[]&gt; {
+    return this.http.get&lt;BackendJob[]&gt;(`${this.apiBaseUrl}/jobs/findOpenPositions`).pipe(
+      map(backendJobs => backendJobs.map(bj => this.mapJob(bj)))
+    );
+  }
+
+  private mapJob(backendJob: BackendJob): Job {
+    return {
+      id: backendJob.jobId!,
+      title: backendJob.title,
+      company: backendJob.employer?.companyName || 'Unknown Company',
+      // ... other fields
+    };
+  }
+}</code></pre>
+    <p>Key points: Dependency injection (<code>inject()</code>), environment config, RxJS <code>pipe</code> and <code>map</code> for data transformation.</p>
+
+    <h2>Component Pattern: Rendering Data</h2>
+    <p>Standalone components import dependencies directly and use signals for reactive state.</p>
+    <pre><code>@Component({
+  selector: 'app-dashboard',
+  standalone: true,
+  imports: [CommonModule, RouterLink, JobCardComponent],
+  template: `
+    &lt;div *ngFor="let job of recommended()"&gt;
+      &lt;app-job-card [job]="job" /&gt;
+    &lt;/div&gt;
+  `
+})
+export class DashboardComponent implements OnInit {
+  private jobService = inject(JobService);
+  recommended = signal&lt;Job[]&gt;([]);
+
+  ngOnInit() {
+    this.jobService.getOpenPositions().subscribe(jobs => this.recommended.set(jobs));
+  }
+}</code></pre>
+    <p>Key points: <code>inject()</code> for services, <code>signal()</code> for state, <code>*ngFor</code> for rendering lists.</p>
+
+    <h2>Data Flow Visualized</h2>
+    <div class="flow">
+        <strong>Component</strong> (Dashboard) → <strong>inject Service</strong> (JobService) → <strong>Service calls API</strong> → <strong>Map Response</strong> → <strong>Update Signal</strong> → <strong>Template Renders</strong>
+    </div>
+    <div style="background:#f8f9fa;padding:1rem;border-radius:8px;font-family:monospace;white-space:pre;overflow-x:auto;max-height:150px">
+┌─────────────────────────────────────────────────────────────────────┐
+│                    DATA FLOW SEQUENCE                              │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│   1. UI Event (click, input)                                       │
+│   2. Component template calls service method                        │
+│   3. Service injects HttpClient, adds auth header                  │
+│   4. HTTP request sent to backend API                              │
+│   5. Backend processes, returns JSON                              │
+│   6. Service maps DTO → UI model                                   │
+│   7. Service updates signal (reactive state)                      │
+│   8. Component template re-renders with new data                   │
+│                                                                      │
+│   Example: User types "engineer" in search → Step 1 → 8 → results │
+│   update instantly without page reload.                           │
+└─────────────────────────────────────────────────────────────────────┘
+</div>
+
+    <h2>Simple Explanation</h2>
+    <p>Imagine ordering food at a restaurant:</p>
+    <ul>
+        <li><strong>Menu (Component):</strong> You see dishes (job listings) presented nicely.</li>
+        <li><strong>Waiter (Service):</strong> Takes your order (API call) and communicates with the kitchen (backend).</li>
+        <li><strong>Kitchen (Backend):</strong> Prepares the meal (processes data) and sends it back.</li>
+        <li><strong>Waiter Returns:</strong> Delivers the food (mapped data) to your table.</li>
+        <li><strong>You Enjoy (UI):</strong> The meal is exactly what you ordered, thanks to the waiter's translation!</li>
+    </ul>
+    <p>Components and services work together to deliver data seamlessly! 🍽️</p>
+
+<h2>Knowledge Check (Multiple Questions)</h2>
+    <div class="note">
+        <p><strong>1. Active Recall:</strong> Why do we use standalone components instead of NgModules in this project?</p>
+        <details>
+            <summary>Click to reveal answer</summary>
+            <ul>
+                <li>Simpler architecture: No need to maintain NgModule declarations. Components import their own dependencies directly.</li>
+            </ul>
+        </details>
+    </div>
+    <div class="note">
+        <p><strong>2. Active Recall:</strong> What is the difference between a backend DTO and a frontend UI model?</p>
+        <details>
+            <summary>Click to reveal answer</summary>
+            <ul>
+                <li>DTO: Raw data shape returned by the API (e.g. nested objects, raw dates).</li>
+                <li>UI Model: Clean, UI-ready data shape with computed fields (like relative dates, initials, colors).</li>
+            </ul>
+        </details>
+    </div>
+    <div class="note">
+        <p><strong>3. Active Recall:</strong> How does a component access an Angular service using modern syntax without constructor injection?</p>
+        <details>
+            <summary>Click to reveal answer</summary>
+            <ul>
+                <li>Using the <code>inject()</code> function: <code>private jobService = inject(JobService);</code></li>
+            </ul>
+        </details>
+    </div>
+    <div class="note">
+        <p><strong>4. Active Recall:</strong> Why do we use <code>signal()</code> instead of raw variables for component state?</p>
+        <details>
+            <summary>Click to reveal answer</summary>
+            <ul>
+                <li>Signals provide fine-grained reactivity, notifying the template to re-render automatically when the value updates without manual change detection.</li>
+            </ul>
+        </details>
+    </div>
+
+    <p>Next: <a href="0003-routing-guards.html">0003 - Routing, Layouts & Guards</a></p>
+</body>
+</html>
+

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Reference - Backend/Frontend Connections</title>
+    <link rel="stylesheet" href="../assets/base.css">
+</head>
+<body>
+    <h1>Quick Reference - How Everything Connects</h1>
+    <p><a href="../lessons/0001-backend-basics-and-architecture.html">Lessons</a> | <a href="../MISSION.md">Mission</a></p>
+
+    <h2>Request Flow (Canonical)</h2>
+    <pre><code>Angular Component ? Service (HttpClient) 
+  ? HTTP Request (http://localhost:8080/api/{path})
+  ? Spring @RestController ? @Service (business logic) 
+  ? Spring Data @Repository ? Database (MySQL)
+  ? JSON ? Entities (JPA) ? Repository ? Service ? Controller ?</code></pre>
+
+    <h2>Common Endpoints</h2>
+    <table>
+        <tr><th>Feature</th><th>Base</th><th>Key</th></tr>
+        <tr><td>Jobs</td><td>/api/jobs</td><td>GET /findOpenPositions, GET /search, GET /read/{id}, POST /create, PUT /update, DELETE /delete/{id}</td></tr>
+        <tr><td>Applications</td><td>/api/applications</td><td>POST /apply, GET /jobseeker/{id}, GET /job/{id}, PUT /update-status, GET /getAll</td></tr>
+        <tr><td>Users/Auth</td><td>/api/users</td><td>POST /login, POST /signup, POST /change-password</td></tr>
+        <tr><td>JobSeekers</td><td>/api/jobseekers</td><td>POST /create, GET /read/{id}, PUT /update, POST /{id}/resume, GET /{id}/resume</td></tr>
+        <tr><td>Employers</td><td>/api/employers</td><td>POST /create, GET /read/{id}, PUT /update, DELETE /delete/{id}, GET /getAll</td></tr>
+        <tr><td>Notifications</td><td>/api/notifications</td><td>GET /user/{userId}, PUT /mark-read/{id}, DELETE /delete/{id}</td></tr>
+    </table>
+
+    <h2>Where to Look (File Map)</h2>
+    <table>
+        <tr><th>Concern</th><th>Backend</th><th>Frontend</th></tr>
+        <tr><td>Routing/API surface</td><td><code>Controller/*Controller.java</code></td><td><code>app.routes.ts</code></td></tr>
+        <tr><td>Business logic</td><td><code>Service/impl/*ServiceImpl.java</code></td><td>Components/Services for UI logic</td></tr>
+        <tr><td>Data access</td><td><code>repository/*Repository.java</code>, <code>UserRepo.java</code></td><td>n/a (API only)</td></tr>
+        <tr><td>Data models</td><td><code>domain/*.java</code></td><td><code>models/models.ts</code>, service <code>Backend*</code> types</td></tr>
+        <tr><td>HTTP calls</td><td>n/a</td><td><code>services/*.service.ts</code> (HttpClient)</td></tr>
+        <tr><td>Config</td><td><code>application.properties</code>, <code>pom.xml</code></td><td><code>environments/environment.ts</code>, <code>app.config.ts</code></td></tr>
+        <tr><td>Auth</td><td><code>UserService.java</code>, <code>UserController.java</code></td><td><code>auth.service.ts</code>, <code>guards/*.guard.ts</code></td></tr>
+        <tr><td>Resume</td><td><code>JobSeekerController</code>, <code>JobSeekerServiceImpl</code></td><td><code>job-seeker.service.ts</code></td></tr>
+        <tr><td>Notifications</td><td><code>NotificationController</code>, <code>NotificationServiceImpl</code></td><td><code>notification.service.ts</code></td></tr>
+        <tr><td>Errors</td><td><code>exception/GlobalExceptionHandler.java</code>, <code>exception/*Exception.java</code></td><td>Services handle errors (catchError)</td></tr>
+    </table>
+
+    <h2>Knowledge Check (Multiple Questions)</h2>
+<p>Each lesson now has 4-8 active recall questions. Try answering them without looking at the answers! Click the "Click to reveal answer" dropdowns to check your understanding.</p>
+
+<h2>Comprehensive Final Quiz</h2>
+<p><strong>Challenge yourself with these 20 questions covering all lessons. Try answering without looking at the answers below!</p>
+
+<div class="note">
+    <p><strong>Backend Architecture (Lessons 1-3)</strong></p>
+    <ol>
+        <li>What are the 4 main layers of the backend? What does each layer do?</li>
+        <li>What annotation tells Spring Boot to auto-update the database schema, and what file configures this behavior?</li>
+        <li>How do we prevent infinite recursion between related JPA entities like Job and Employer?</li>
+        <li>What is the entry point for starting the Spring Boot application, and where is it located?</li>
+        <li>Name 2 side effects that happen inside <code>ApplicationsServiceImpl.apply()</code>.</li>
+        <li>Which HTTP method and endpoint are used to submit a job application?</li>
+        <li>What annotation allows cross-origin requests from the frontend during development?</li>
+        <li>What is the purpose of <code>GlobalExceptionHandler.java</code>?</li>
+    </ol>
+</div>
+
+<div class="note">
+    <p><strong>Frontend Architecture (Lessons 4-7)</strong></p>
+    <ol start="8">
+        <li>Where is the <code>apiBaseUrl</code> defined in the frontend?</li>
+        <li>What is the difference between a backend DTO and a frontend UI model?</li>
+        <li>How does Angular's <code>inject()</code> function work compared to constructor injection?</li>
+        <li>What does <code>appliedJobIdsSignal</code> track, and why is it a Set instead of an array?</li>
+        <li>What are the two primary ways to navigate in Angular?</li>
+        <li>Which Tailwind breakpoint prefixes are commonly used for responsive design?</li>
+        <li>What is the purpose of <code>auth.guard.ts</code> and <code>role.guard.ts</code>?</li>
+        <li>How is the user session persisted in the frontend after login?</li>
+    </ol>
+</div>
+
+<div class="note">
+    <p><strong>Integration & Testing (All Lessons)</strong></p>
+    <ol start="15">
+        <li>After logging in via <code>POST /api/users/login</code>, what backend call is made to get the full user profile?</li>
+        <li>What command is used to run frontend tests?</li>
+        <li>What command is used to run backend tests and type checks?</li>
+        <li>What JSON body fields are typically sent in the <code>POST /api/applications/apply</code> request?</li>
+        <li>What is the purpose of the <code>JobApplicationFactory</code>?</li>
+    </ol>
+</div>
+
+<p><strong>Answers (Click to reveal)</strong></p>
+<details>
+    <summary>Backend Answers</summary>
+    <ul>
+        <li>Controller (API), Service (Business Logic), Repository (Database), Entity (Data Structure)</li>
+        <li>JPA <code>ddl-auto=update</code> in <code>application.properties</code></li>
+        <li><code>@JsonIgnoreProperties("jobs")</code> on the related entity or careful <code>equals/hashCode</code> implementation.</li>
+        <li><code>Main.java</code> in <code>backend/src/main/java/za/ac/cput/Main.java</code></li>
+        <li>Checks for duplicate applications; triggers employer notification.</li>
+        <li><code>POST /api/applications/apply</code></li>
+        <li><code>@CrossOrigin</code> annotation on the controller.</li>
+        <li>Catches exceptions globally and returns standardized JSON error responses.</li>
+    </ul>
+</details>
+<details>
+    <summary>Frontend Answers</summary>
+    <ul>
+        <li><code>client/src/environments/environment.ts</code></li>
+        <li>DTO: Raw data from API; UI Model: Processed for display, includes computed fields.</li>
+        <li><code>inject()</code> imports dependencies directly, reducing constructor boilerplate.</li>
+        <li>Tracks applied job IDs for O(1) lookup; Set is used for performance.</li>
+        <li>Declarative (<code>RouterLink</code>) and Programmatic (<code>Router.navigate()</code>).</li>
+        <li><code>sm:</code>, <code>md:</code>, <code>lg:</code>, <code>xl:</code></li>
+        <li>Auth Guard: checks login; Role Guard: checks role permission.</li>
+        <li>Auth signals + <code>localStorage</code> entry <code>careerwise_auth_user</code>.</li>
+    </ul>
+</details>
+<details>
+    <summary>Integration & Testing Answers</summary>
+    <ul>
+        <li>Frontend calls <code>GET /api/jobseekers/read/{userId}</code> or <code>/employers/read/{userId}</code>.</li>
+        <li><code>npm test</code> in the <code>client</code> directory.</li>
+        <li>Backend tests: <code>mvn test</code> or similar (check backend README); Type checks: <code>npm run typecheck</code> (if applicable).</li>
+        <li><code>jobSeekerId</code>, <code>jobId</code>, <code>notes</code>.</li>
+        <li>Used to create <code>JobApplication</code> objects, ensuring consistency and encapsulation.</li>
+    </ul>
+</details>
+    <ul>
+        <li><strong>Architecture:</strong> Controller ? Service ? Repo layers (Lesson 0001)</li>
+        <li><strong>Consumption:</strong> HttpClient + apiBaseUrl + mapping (Lesson 0004)</li>
+        <li><strong>End-to-end:</strong> Apply flow with Network tab (Lesson 0003)</li>
+        <li><strong>Auth:</strong> users/login + enrich with jobseeker/employer (Lesson 0005)</li>
+        <li><strong>Side effects:</strong> Notifications on create/apply/status change (Lesson 0005)</li>
+        <li><strong>Resume:</strong> multipart upload/download (Lesson 0005)</li>
+        <li><strong>Guards/Errors:</strong> Route protection + global handling (Lesson 0005)</li>
+    </ul>
+
+    <h2>Tips for Presentation</h2>
+    <ul>
+        <li>Use Network tab in browser dev tools - makes API calls visible</li>
+        <li>Show mapping: Backend DTO shape vs UI model shape</li>
+        <li>Emphasize side effects live in service layer (not controllers)</li>
+        <li>Point to constructor injection and interface+impl pattern</li>
+        <li>Signals in Angular show reactive UI updates</li>
+    </ul>
+</body>
+</html>

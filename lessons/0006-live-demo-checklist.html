@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>0006 - Live Demo Checklist for Presentation</title>
+    <link rel="stylesheet" href="../assets/base.css">
+</head>
+<body>
+    <h1>0006 - Live Demo Checklist for Presentation</h1>
+    <p><a href="../MISSION.md">Back to Mission</a> | <a href="0005-auth-resume-notifications-errors.html">Previous</a></p>
+
+    <h2>Lesson Goal</h2>
+    <p>Deliver a flawless live demo proving how the frontend consumes the backend and how all layers connect.</p>
+
+    <h2>Pre-Demo Checklist</h2>
+    <table>
+        <tr><th>Item</th><th>Details</th></tr>
+        <tr>
+            <td>Backend</td>
+            <td>Running on <code>http://localhost:8080</code> (check <code>Main.java</code>)</td>
+        </tr>
+        <tr>
+            <td>Frontend</td>
+            <td>Angular dev server at <code>http://localhost:4200</code></td>
+        </tr>
+        <tr>
+            <td>Database</td>
+            <td>MySQL running with <code>application.properties</code> config. Seed with test data or create accounts live.</td>
+        </tr>
+        <tr>
+            <td>Dev Tools</td>
+            <td>Browser Network tab open to capture HTTP calls.</td>
+        </tr>
+        <tr>
+            <td>IDE</td>
+            <td>Key files open: Controllers, Services, Frontend Services, Environment config.</td>
+        </tr>
+    </table>
+    <div style="background:#f8f9fa;padding:1rem;border-radius:8px;font-family:monospace;white-space:pre;overflow-x:auto;">
+<pre style="margin:0;"><code>Setup Check:
+[✓] Backend: Spring Boot (:8080)
+[✓] Frontend: Angular Dev Server (:4200)
+[✓] DevTools: Network Tab open
+[✓] Test Accounts: Candidate & Employer ready</code></pre>
+</div>
+
+    <h2>Demo Script (3-5 Minutes)</h2>
+    <ol>
+        <li>
+            <strong>Intro (30s)</strong>
+            <p>Explain architecture: Angular UI → Services → Spring Boot API (<code>/api</code>) → Controller → Service → Repository → DB.</p>
+            <div style="background:#f8f9fa;padding:1rem;border-radius:8px;font-family:monospace;white-space:pre;overflow-x:auto;">
+<pre style="margin:0;"><code>Angular UI  ──▶  Spring Boot REST (/api)  ──▶  Service Layer  ──▶  JPA / DB</code></pre>
+</div>
+        </li>
+        <li>
+            <strong>API Surface (30s)</strong>
+            <p>Show <code>JobController.java</code> and <code>JobApplicationController.java</code>. Highlight endpoints: <code>/api/jobs/findOpenPositions</code>, <code>/api/applications/apply</code>.</p>
+        </li>
+        <li>
+            <strong>Frontend Consumption (45s)</strong>
+            <p>Open <code>job.service.ts</code>. Show <code>apiBaseUrl</code> from <code>environment.ts</code>, <code>HttpClient</code> call, and <code>mapJob()</code> converting backend DTO to UI model.</p>
+        </li>
+        <li>
+            <strong>Live: Browse Jobs (1m)</strong>
+            <p>Navigate to Jobs page. Use Network tab to show GET request → JSON response → UI rendering mapped jobs.</p>
+        </li>
+        <li>
+            <strong>Live: Auth & Apply (1.5m)</strong>
+            <p>Login as candidate. Show <code>auth.service.ts</code> fetching profile. Click "Apply Now" → Network shows POST <code>/api/applications/apply</code>. Backend <code>ApplicationsServiceImpl</code> creates app and triggers employer notification. UI updates applied state.</p>
+            <div style="background:#f8f9fa;padding:1rem;border-radius:8px;font-family:monospace;white-space:pre;overflow-x:auto;">
+<pre style="margin:0;"><code>1. Click "Apply" ──▶ POST /api/applications/apply
+2. Service logic ──▶ Check duplicate, Save DB
+3. Side Effects  ──▶ Notification (Employer gets alert)
+4. UI Update     ──▶ Reactively shows applied state</code></pre>
+</div>
+        </li>
+        <li>
+            <strong>Wrap-up (1m)</strong>
+            <p>Summarize: Resume upload/download, notifications, guards, error handling. Reference Quick Reference guide.</p>
+        </li>
+    </ol>
+
+    <h2>Talking Points</h2>
+    <ul>
+        <li><strong>Consumption:</strong> "Frontend services act as translators, calling backend APIs and converting responses to UI-friendly models."</li>
+        <li><strong>Connections:</strong> "Controllers define the contract, services enforce logic, repositories persist data, and the frontend reacts to state changes."</li>
+        <li><strong>Side Effects:</strong> "Applying for a job doesn't just save data—it triggers notifications to employers, showing business logic in action."</li>
+        <li><strong>Integrity:</strong> "Validations (e.g., deadlines, duplicates) ensure data consistency across layers."</li>
+        <li><strong>Security:</strong> "Route guards protect pages based on user roles, while CORS allows frontend-backend communication in dev."</li>
+    </ul>
+
+    <h2>Code to Spotlight</h2>
+    <table>
+        <tr><th>Proof Point</th><th>File & Location</th></tr>
+        <tr>
+            <td>API Endpoint</td>
+            <td><code>JobApplicationController.java: apply()</code></td>
+        </tr>
+        <tr>
+            <td>Business Logic</td>
+            <td><code>ApplicationsServiceImpl.java: apply() → duplicate check, save, notify</code></td>
+        </tr>
+        <tr>
+            <td>Frontend Call</td>
+            <td><code>application.service.ts: apply()</code></td>
+        </tr>
+        <tr>
+            <td>Mapping Layer</td>
+            <td><code>job.service.ts: mapJob()</code></td>
+        </tr>
+        <tr>
+            <td>Auth Flow</td>
+            <td><code>auth.service.ts: login() → profile fetch</code></td>
+        </tr>
+        <tr>
+            <td>Route Guards</td>
+            <td><code>auth.guard.ts: canActivate()</code></td>
+        </tr>
+    </table>
+
+    <h2>Backup Plan</h2>
+    <ul>
+        <li><strong>Mental Trace:</strong> Use Lesson 0003's apply flow diagram to explain steps verbally.</li>
+        <li><strong>Static Payloads:</strong> Show pre-captured Network requests/responses or sample JSON from controllers.</li>
+        <li><strong>Code Walkthrough:</strong> Highlight mapping and side effects in service layers.</li>
+    </ul>
+
+    <h2>Simple Explanation</h2>
+    <p>Think of the demo as a <strong>theater play</strong>:</p>
+    <ul>
+        <li><strong>Actors:</strong> Frontend (UI), Backend (API/Logic), Database (Storage).</li>
+        <li><strong>Script:</strong> The demo steps are the scene directions.</li>
+        <li><strong>Props:</strong> Code files, Network tab, and UI interactions.</li>
+        <li><strong>Audience:</strong> Your presentation viewers need to see how all parts work together seamlessly.</li>
+    </ul>
+    <p>Practice makes perfect—rehearse each "scene" until smooth! 🎭</p>
+
+    <h2>Key Takeaways</h2>
+    <ul>
+        <li>Use the Network tab to visually prove API consumption.</li>
+        <li>Show end-to-end flows (UI → DB → UI) to demonstrate connectivity.</li>
+        <li>Highlight transformations (DTO → UI model) and side effects (notifications).</li>
+        <li>Have backup talking points and code snippets ready.</li>
+    </ul>
+
+    <p>Previous: <a href="0005-auth-resume-notifications-errors.html">0005</a> | <a href="../reference/quick-reference.html">Quick Reference</a></p>
+</body>
+</html>
+

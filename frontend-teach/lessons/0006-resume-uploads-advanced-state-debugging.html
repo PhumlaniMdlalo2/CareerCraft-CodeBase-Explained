@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>0006 - Resume Uploads, Advanced State & Debugging</title>
+    <link rel="stylesheet" href="../assets/base.css">
+</head>
+<body>
+    <h1>0006 - Resume Uploads, Advanced State & Debugging</h1>
+    <p><a href="0005-forms-ui-patterns-tailwind.html">Previous</a></p>
+
+    <h2>Lesson Goal</h2>
+    <p>Master resume file handling, advanced state management with signals, robust error handling, and effective debugging techniques.</p>
+
+    <h2>Resume Upload/Download: File Handling</h2>
+    <p><code>job-seeker.service.ts</code> manages resume operations using Angular's HTTP client:</p>
+    <ul>
+        <li><strong>Upload:</strong> Sends <code>POST /api/jobseekers/{userId}/resume</code> with <code>FormData</code> containing the file. Backend stores it server-side.</li>
+        <li><strong>Download:</strong> Requests <code>GET /api/jobseekers/{userId}/resume</code> with <code>responseType: 'blob'</code>. Creates a temporary object URL and triggers a browser download.</li>
+    </ul>
+    <pre><code>// Upload Example
+uploadResume(userId: string, file: File): Observable&lt;BackendJobSeekerFull&gt; {
+  const formData = new FormData();
+  formData.append('file', file);
+  return this.http.post&lt;BackendJobSeekerFull&gt;(
+    `${this.apiBaseUrl}/jobseekers/${userId}/resume`, 
+    formData
+  );
+}
+
+// Download Example
+downloadResume(userId: string): Observable&lt;void&gt; {
+  return this.http.get(
+    `${this.apiBaseUrl}/jobseekers/${userId}/resume`, 
+    { responseType: 'blob' }
+  ).pipe(
+    tap(blob => {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'resume.pdf';
+      a.click();
+      window.URL.revokeObjectURL(url);
+    })
+  );
+}</code></pre>
+    <div style="background:#f8f9fa;padding:1rem;border-radius:8px;font-family:monospace;white-space:pre;overflow-x:auto;max-height:200px;">
+<div style="border:1px solid #dee2e6;padding:1rem;margin:0.5rem 0;">
+<div style="font-weight:bold;margin-bottom:0.5rem;">RESUME UPLOAD/DOWNLOAD FLOW</div>
+<pre style="margin:0;"><code>Upload Process:
+├─ User selects file → <input type="file" (change)="upload($event)">
+├─ Service creates FormData → formData.append('file', file)
+├─ POST /api/jobseekers/{userId}/resume
+├─ Backend saves file, returns { success: true }
+
+Download Process:
+├─ Service GET /api/jobseekers/{userId}/resume?responseType=blob
+├─ RxJS tap creates object URL → window.URL.createObjectURL(blob)
+├─ Create anchor element → a.href = url; a.download = 'resume.pdf'
+├─ a.click() → browser download
+└─ Cleanup: window.URL.revokeObjectURL(url)</code></pre>
+</div>
+</div>
+
+    <h2>Advanced State Management with Signals</h2>
+    <p>Services expose <strong>readonly signals</strong> for reactive state sharing:</p>
+    <ul>
+        <li><code>ApplicationService</code>: <code>applicationsSignal</code> (array), <code>appliedJobIdsSignal</code> (Set for O(1) lookups)</li>
+        <li><code>AuthService</code>: <code>userSignal</code> (persisted to <code>localStorage</code>)</li>
+    </ul>
+    <pre><code>// Service Example
+private applicationsSignal = signal&lt;Application[]&gt;([]);
+private appliedJobIdsSignal = signal&lt;Set&lt;string&gt;&gt;(new Set());
+
+// Expose readonly access
+applications = this.applicationsSignal.asReadonly();
+appliedJobIds = this.appliedJobIdsSignal.asReadonly();
+
+// Component Usage
+// Access in template: {{ appliedJobIds().has(jobId) }}
+</code></pre>
+    <div style="background:#f8f9fa;padding:1rem;border-radius:8px;font-family:monospace;white-space:pre;overflow-x:auto;max-height:150px;">
+<div style="border:1px solid #dee2e6;padding:1rem;margin:0.5rem 0;">
+<div style="font-weight:bold;margin-bottom:0.5rem;">SIGNALS DATA FLOW</div>
+<pre style="margin:0;"><code>Service Example:
+├─ private applicationsSignal = signal<Application[]>([])
+├─ private appliedJobIdsSignal = signal<Set<string>>(new Set())
+├─ applications = this.applicationsSignal.asReadonly()
+├─ appliedJobIds = this.appliedJobIdsSignal.asReadonly()
+
+Component Usage:
+├─ {{ appliedJobIds().has(jobId) }}
+└─ When signal updates → template auto-renders</code></pre>
+</div>
+</div>
+
+    <h2>Error Handling: Graceful Failures</h2>
+    <ul>
+        <li><strong>HTTP Errors:</strong> Services use <code>catchError</code> to handle API failures, returning user-friendly messages.</li>
+        <li><strong>Auth Errors:</strong> <code>AuthService</code> normalizes network/server errors into consistent formats.</li>
+        <li><strong>UI Feedback:</strong> Components display toast notifications or inline errors using signals.</li>
+    </ul>
+    <pre><code>// Example Error Handling
+this.http.post(...).pipe(
+  catchError(error => {
+    this.toastService.showError('Upload failed. Try again.');
+    return EMPTY;
+  })
+);</code></pre>
+    <div style="background:#f8f9fa;padding:1rem;border-radius:8px;font-family:monospace;white-space:pre;overflow-x:auto;max-height:100px;">
+<div style="border:1px solid #dee2e6;padding:1rem;margin:0.5rem 0;">
+<div style="font-weight:bold;margin-bottom:0.5rem;">ERROR HANDLING FLOW</div>
+<pre style="margin:0;"><code>Service Call → HttpClient → Response
+   ↓            ↓            ↓
+   Success     → map() → update signal → UI render
+   Error       → catchError() → show toast → log to console
+   NetworkErr → catchError() → show "Connection failed"
+
+Example:
+this.http.post(...).pipe(
+  catchError(err => {
+    if (err.status === 0) {
+      // Network error
+    } else {
+      // Server error
+    }
+    this.toastService.showError('Operation failed');
+    return EMPTY;
+  })
+)</code></pre>
+</div>
+</div>
+
+    <h2>Debugging Tips: Finding Issues Fast</h2>
+    <ol>
+        <li><strong>Network Tab:</strong> Inspect <code>/api/*</code> requests for URLs, payloads, and responses.</li>
+        <li><strong>Console:</strong> Log service method entries/exits and critical state changes.</li>
+        <li><strong>localStorage:</strong> Check <code>careerwise_auth_user</code> for auth state issues.</li>
+        <li><strong>Angular DevTools:</strong> Inspect component hierarchies, signals, and state (if available).</li>
+        <li><strong>Source Maps:</strong> Ensure TypeScript errors map to original source code.</li>
+    </ol>
+    <div style="background:#f8f9fa;padding:1rem;border-radius:8px;font-family:monospace;white-space:pre;overflow-x:auto;max-height:150px;">
+<div style="border:1px solid #dee2e6;padding:1rem;margin:0.5rem 0;">
+<div style="font-weight:bold;margin-bottom:0.5rem;">DEBUGGING STEPS</div>
+<pre style="margin:0;"><code>1. Open Chrome DevTools → Network tab
+   └─ Check /api/* requests: URL, payload, response
+2. Console tab → Search for errors, log() output
+3. Application → Local Storage → careerwise_auth_user
+4. Angular DevTools (if available) → Inspect signals
+5. Source Maps → Verify TypeScript line numbers match
+6. Network tab → Save response as HAR for debugging</code></pre>
+</div>
+</div>
+
+    <h2>Simple Explanation</h2>
+    <p>Imagine a <strong>library system</strong>:</p>
+    <ul>
+        <li><strong>Resume Upload:</strong> Returning a book (file) to the library (server).</li>
+        <li><strong>State Management:</strong> The catalog (signals) tracking all checked-out books (applications) efficiently.</li>
+        <li><strong>Error Handling:</strong> Librarians (services) catching misfiled books and notifying patrons (UI toasts).</li>
+        <li><strong>Debugging:</strong> Finding a misplaced book using the card catalog (console), checkout logs (network tab), and shelf labels (source maps).</li>
+    </ul>
+    <p>Everything works together to keep the library (app) organized! 📚</p>
+
+    <h2>Knowledge Check</h2>
+    <div class="note">
+        <p><strong>6. Active Recall:</strong> What is the purpose of <code>appliedJobIdsSignal</code> in <code>ApplicationService</code>, and why is it a <code>Set</code> instead of an array?</p>
+        <details>
+            <summary>Click to reveal answer</summary>
+            <ul>
+                <li>Purpose: To track which job IDs the current user has applied to for quick lookup.</li>
+                <li>Set vs Array: <code>Set</code> provides O(1) lookup/add/remove operations, while array would be O(n) for checking membership.</li>
+            </ul>
+        </details>
+    </div>
+
+    <p>Next: <a href="0007-testing-navigation-responsiveness.html">0007 - Testing, Navigation & Responsiveness</a></p>
+</body>
+</html>
+

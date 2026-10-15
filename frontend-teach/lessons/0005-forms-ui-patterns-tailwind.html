@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>0005 - Forms, UI Patterns & Tailwind</title>
+    <link rel="stylesheet" href="../assets/base.css">
+</head>
+<body>
+    <h1>0005 - Forms, UI Patterns & Tailwind</h1>
+    <p><a href="0004-http-models-auth-state.html">Previous</a></p>
+
+    <h2>Lesson Goal</h2>
+    <p>Master form handling, reusable UI components, and Tailwind CSS styling in the Angular frontend.</p>
+
+    <h2>Forms: Data Collection</h2>
+    <p>Forms are built using Angular's <strong>template-driven</strong> (simple forms) and <strong>reactive</strong> (complex forms) approaches. Examples:</p>
+    <ul>
+        <li><strong>Login/Signup:</strong> <code>auth-layout</code> pages use reactive forms with validation.</li>
+        <li><strong>Job Posting:</strong> Multi-step form in <code>employer-job-create.page.ts</code> uses reactive forms with custom validators.</li>
+    </ul>
+    <div style="background:#f8f9fa;padding:1rem;border-radius:8px;font-family:monospace;white-space:pre;overflow-x:auto;max-height:200px;">
+<div style="border:1px solid #dee2e6;padding:1rem;margin:0.5rem 0;">
+<div style="font-weight:bold;margin-bottom:0.5rem;">FORM TYPES</div>
+<pre style="margin:0;"><code>TEMPLATE-DRIVEN FORMS (Simple)
+├─ Declarative: <form> with ngModel
+├─ Good for: Login, Signup, Search
+├─ Example: <input [(ngModel)]="user.email" name="email">
+
+REACTIVE FORMS (Complex)
+├─ Imperative: FormControl, FormGroup
+├─ Good for: Job posting, Multi-step wizards
+├─ Example:
+│  const form = new FormGroup({
+│    title: new FormControl('', Validators.required),
+│    description: new FormControl(''),
+│    salary: new FormControl(0, Validators.min(0))
+│  });
+
+Use reactive for complex validation and dynamic forms</code></pre>
+</div>
+</div>
+    <p>Key Tips: Use <code>FormControl</code>, <code>FormGroup</code>, and <code>Validators</code> for reactive forms. Keep logic in components, but complex validation in services.</p>
+
+    <h2>UI Components: Reusable Building Blocks</h2>
+    <p>Components are standalone Angular modules imported where needed:</p>
+    <ul>
+        <li><code>job-card.component.ts</code>: Displays job details with company logo and apply button.</li>
+        <li><code>header.component.ts</code> and <code>sidebar.component.ts</code>: Navigation and layout structure.</li>
+        <li><code>toast.component.ts</code>: Shows success/error messages using signals for state.</li>
+    </ul>
+    <div style="background:#f8f9fa;padding:1rem;border-radius:8px;font-family:monospace;white-space:pre;overflow-x:auto;max-height:150px;">
+<div style="border:1px solid #dee2e6;padding:1rem;margin:0.5rem 0;">
+<div style="font-weight:bold;margin-bottom:0.5rem;">COMPONENT REUSE</div>
+<pre style="margin:0;"><code>// job-card.component.ts
+@Component({
+  selector: 'app-job-card',
+  standalone: true,
+  inputs: ['job'],
+  template: `
+    <div class="job-card">
+      <h3>{{ job.title }}</h3>
+      <p>{{ job.company }}</p>
+      <button (click)="apply(job)">Apply Now</button>
+    </div>
+  `
+})
+export class JobCardComponent {}
+
+// Usage in DashboardComponent
+<div *ngFor="let job of jobs()">
+  <app-job-card [job]="job" />
+</div></code></pre>
+</div>
+</div>
+    <p>Follow the pattern: Use <code>@Component({ standalone: true })</code> and import necessary modules.</p>
+
+    <h2>Styling with Tailwind CSS</h2>
+    <p>Tailwind's utility-first CSS is used for rapid UI development. Examples from the codebase:</p>
+    <ul>
+        <li><code>bg-white rounded-2xl shadow-sm</code>: Card styling.</li>
+        <li><code>text-stone-900</code>: Consistent text color.</li>
+        <li><code>grid grid-cols-3 gap-4</code>: Responsive job grid.</li>
+    </ul>
+    <p>Global styles (e.g., fonts, base colors) are in <code>client/src/styles.css</code>. Component-specific styles are inline or in separate CSS files.</p>
+    <div style="background:#f8f9fa;padding:1rem;border-radius:8px;font-family:monospace;white-space:pre;overflow-x:auto;max-height:100px;">
+<div style="border:1px solid #dee2e6;padding:1rem;margin:0.5rem 0;">
+<div style="font-weight:bold;margin-bottom:0.5rem;">TAILWIND UTILITY EXAMPLES</div>
+<pre style="margin:0;"><code>// Card styling
+<div class="bg-white rounded-2xl shadow-sm p-4">
+  <h3 class="text-lg font-semibold text-stone-900">Job Title</h3>
+  <p class="text-stone-600">Company Name</p>
+</div>
+
+// Responsive grid
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+  <!-- Job cards here -->
+</div>
+
+// Layout utilities
+<div class="flex flex-col md:flex-row gap-4">
+  <aside class="w-full md:w-1/4">Sidebar</aside>
+  <main class="w-full md:w-3/4">Content</main>
+</div></code></pre>
+</div>
+</div>
+
+    <h2>Best Practices</h2>
+    <ul>
+        <li><strong>Component Patterns:</strong> Use standalone components with signals for state.</li>
+        <li><strong>API Calls:</strong> Keep HTTP logic in services, not components.</li>
+        <li><strong>DTO Mapping:</strong> Convert backend data to UI models for clean templates.</li>
+        <li><strong>Route Protection:</strong> Use guards to restrict access by role/auth status.</li>
+    </ul>
+
+    <h2>Simple Explanation</h2>
+    <p>Imagine building a restaurant:</p>
+    <ul>
+        <li><strong>Forms:</strong> Order slips (customers input requests).</li>
+        <li><strong>Components:</strong> Menu items (reusable dishes like job cards).</li>
+        <li><strong>Tailwind:</strong> Chef's uniform (consistent styling across all staff).</li>
+    </ul>
+    <p>Everything works together to serve customers (users) efficiently! 🍽️</p>
+
+    <p>End of frontend lessons. See <a href="../reference/frontend-quick-ref.html">Quick Reference</a></p>
+</body>
+</html>
+

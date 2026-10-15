@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frontend Quick Reference</title>
+    <link rel="stylesheet" href="../assets/base.css">
+</head>
+<body>
+    <h1>Frontend Quick Reference</h1>
+    <p><a href="../lessons/0001-frontend-overview-structure.html">Lessons</a></p>
+
+    <h2>Key Files</h2>
+    <table>
+        <tr><th>Purpose</th><th>Path</th></tr>
+        <tr><td>Bootstrap</td><td><code>client/src/main.ts</code></td></tr>
+        <tr><td>Config/Providers</td><td><code>client/src/app/app.config.ts</code></td></tr>
+        <tr><td>Routes</td><td><code>client/src/app/app.routes.ts</code></td></tr>
+        <tr><td>Root</td><td><code>client/src/app/app.ts</code></td></tr>
+        <tr><td>API Base</td><td><code>client/src/environments/environment.ts</code></td></tr>
+        <tr><td>Global Styles</td><td><code>client/src/styles.css</code></td></tr>
+        <tr><td>UI Models</td><td><code>client/src/app/models/models.ts</code></td></tr>
+        <tr><td>Services</td><td><code>client/src/app/services/*.service.ts</code></td></tr>
+        <tr><td>Components</td><td><code>client/src/app/components/*/*.component.ts</code></td></tr>
+        <tr><td>Pages</td><td><code>client/src/app/pages/*/*.component.ts</code></td></tr>
+        <tr><td>Layouts</td><td><code>client/src/app/layouts/*/*.component.ts</code></td></tr>
+        <tr><td>Guards</td><td><code>client/src/app/guards/*.guard.ts</code></td></tr>
+        <tr><td>Job Seeker (Resume)</td><td><code>client/src/app/services/job-seeker.service.ts</code></td></tr>
+    </table>
+
+    <h2>Patterns</h2>
+    <ul>
+        <li><strong>Standalone:</strong> <code>standalone: true</code>, import deps in <code>imports: []</code></li>
+        <li><strong>DI:</strong> <code>private http = inject(HttpClient);</code></li>
+        <li><strong>State:</strong> <code>signal&lt;T&gt;()</code>, <code>computed()</code>, <code>asReadonly()</code></li>
+        <li><strong>HTTP:</strong> <code>this.http.get&lt;T&gt;(url)</code> ? <code>pipe(map(...), catchError(...))</code></li>
+        <li><strong>Upload:</strong> <code>FormData</code> with <code>'file'</code></li>
+        <li><strong>Download:</strong> <code>{ responseType: 'blob' }</code></li>
+        <li><strong>Auth:</strong> Signals + localStorage (<code>careerwise_auth_user</code>)</li>
+        <li><strong>Mapping:</strong> Backend DTO ? UI model in service layer</li>
+    </ul>
+
+    <h2>Must Know</h2>
+    <ul>
+        <li>API base: <code>http://localhost:8080/api</code></li>
+        <li>All API calls go through services (never components directly)</li>
+        <li>Guards protect routes (auth/role)</li>
+        <li>Signals drive reactive UI</li>
+        <li>DTO/UI mapping isolates backend changes</li>
+    </ul>
+</body>
+</html>

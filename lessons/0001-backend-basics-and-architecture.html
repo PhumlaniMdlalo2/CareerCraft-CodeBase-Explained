@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>0001 - Backend Basics & Architecture</title>
+    <link rel="stylesheet" href="../assets/base.css">
+</head>
+<body>
+    <h1>0001 - Backend Basics & Architecture</h1>
+    <p><a href="../MISSION.md">Back to Mission</a> | <a href="../NOTES.md">Notes</a> | <a href="../RESOURCES.md">Resources</a></p>
+
+    <h2>Lesson Goal</h2>
+    <p>Grasp how the Spring Boot backend is structured, its layers, and how they work together to handle requests.</p>
+
+    <h2>Tech Stack: The Tools We Use</h2>
+    <ul>
+        <li><strong>Spring Boot 3.2.5</strong>: The framework that simplifies Java backend development (defined in <code>pom.xml</code>).</li>
+        <li><strong>Spring Data JPA</strong>: Makes database interactions easy with Java Persistence API.</li>
+        <li><strong>Lombok</strong>: Reduces boilerplate code (e.g., getters/setters) with annotations like <code>@Data</code>.</li>
+        <li><strong>MySQL/H2</strong>: Databases used for development (configured in <code>application.properties</code>).</li>
+        <li><strong>Jackson</strong>: Converts Java objects to JSON and vice versa.</li>
+    </ul>
+
+    <h2>Layering: The Backend's Org Chart</h2>
+    <p>Think of the backend as a company with specialized departments:</p>
+    <table>
+        <tr><th>Layer</th><th>Purpose</th><th>Analogy</th><th>Code Example</th></tr>
+        <tr>
+            <td><strong>Controller (REST)</strong></td>
+            <td>Handles HTTP requests/responses</td>
+            <td>Receptionist</td>
+            <td><code>Controller/JobController.java</code></td>
+        </tr>
+        <tr>
+            <td><strong>Service</strong></td>
+            <td>Executes business logic</td>
+            <td>Manager</td>
+            <td><code>Service/IJobService.java</code> → <code>JobServiceImpl.java</code></td>
+        </tr>
+        <tr>
+            <td><strong>Repository</strong></td>
+            <td>Talks to the database</td>
+            <td>Librarian</td>
+            <td><code>repository/IJobRepository.java</code></td>
+        </tr>
+        <tr>
+            <td><strong>Domain/Entity</strong></td>
+            <td>Represents data tables</td>
+            <td>Books in the library</td>
+            <td><code>domain/Job.java</code>, <code>User.java</code></td>
+        </tr>
+        <tr>
+            <td><strong>Factory</strong></td>
+            <td>Helps create objects (e.g., Builder pattern)</td>
+            <td>Assembly Line</td>
+            <td><code>factory/JobApplicationFactory.java</code></td>
+        </tr>
+    </table>
+
+    <div class="flow">
+        <strong>Typical Request Flow:</strong>
+        <ol>
+            <li>Controller (Receptionist) gets an HTTP request.</li>
+            <li>Calls Service (Manager) to handle the work.</li>
+            <li>Service asks Repository (Librarian) for data.</li>
+            <li>Repository fetches data from the database.</li>
+            <li>Data is sent back as JSON (like a report).</li>
+        </ol>
+        <div style="background:#f8f9fa;padding:1rem;border-radius:8px;font-family:monospace;white-space:pre;overflow-x:auto;max-height:200px">
+<pre style="margin:0;"><code>HTTP Request → [Controller] → [Service] → [Repository] → [Database]
+      ↑             |           |             |              |
+      └─────────────┴───────────┴─────────────┴──────────────┘
+                    (JSON Response)</code></pre>
+</div>
+    </div>
+
+    <h2>Entry Point: Where It All Starts</h2>
+    <pre><code>@SpringBootApplication
+public class Main {
+    public static void main(String[] args) {
+        SpringApplication.run(Main.class, args);
+    }
+}</code></pre>
+    <p>This <code>Main.java</code> is the ignition switch that starts the Spring Boot app.</p>
+
+    <h2>Configuration: The Rulebook</h2>
+    <p><code>application.properties</code> sets up rules for:</p>
+    <ul>
+        <li>Database connections (MySQL/H2)</li>
+        <li>JPA: <code>ddl-auto=update</code> (auto-updates database schema)</li>
+        <li>SQL logging (to see queries in the console)</li>
+        <li>Multipart file uploads (for resumes)</li>
+        <li>Jackson date formatting</li>
+    </ul>
+
+    <h2>Key Takeaways</h2>
+    <ul>
+        <li>Controllers use <code>@RestController</code> and <code>@RequestMapping</code> to handle HTTP methods.</li>
+        <li>Services are injected into controllers via constructor (dependency injection).</li>
+        <li>Repositories extend <code>JpaRepository</code> to get CRUD methods for free.</li>
+        <li>Entities map to database tables with JPA annotations.</li>
+        <li>Relationships (e.g., Job → Employer) use annotations like <code>@ManyToOne</code>.</li>
+    </ul>
+
+    <h2>Simple Explanation</h2>
+    <p>Imagine the backend as a <strong>restaurant kitchen</strong>:</p>
+    <ul>
+        <li><strong>Controller</strong>: Waiter taking your order (HTTP request).</li>
+        <li><strong>Service</strong>: Chef preparing the meal (business logic).</li>
+        <li><strong>Repository</strong>: Pantry manager fetching ingredients (database data).</li>
+        <li><strong>Domain/Entity</strong>: The ingredients themselves (data models).</li>
+        <li><strong>JSON</strong>: The plate that delivers the meal to your table (response format).</li>
+    </ul>
+    <p>Every request follows this flow to get you the data you need! 🍽️</p>
+
+    <h2>Knowledge Check (Multiple Questions)</h2>
+    <div class="note">
+        <p><strong>1. Active Recall:</strong> Without looking back, what are the 4 main layers of our backend and what is the primary responsibility of the "Service" layer?</p>
+        <details>
+            <summary>Click to reveal answer</summary>
+            <ul>
+                <li>Controller: API Endpoints / Request Handling</li>
+                <li>Service: Business Logic & Orchestration (Manager)</li>
+                <li>Repository: Database Communication (Librarian)</li>
+                <li>Entity/Domain: Data structure (Books)</li>
+            </ul>
+        </details>
+    </div>
+    <div class="note">
+        <p><strong>2. Active Recall:</strong> Which annotation tells Spring Boot to auto-update the database schema, and what file configures this behavior?</p>
+        <details>
+            <summary>Click to reveal answer</summary>
+            <ul>
+                <li>Annotation: <code>@Entity</code> with <code>ddl-auto=update</code> in JPA</li>
+                <li>Config file: <code>application.properties</code></li>
+            </ul>
+        </details>
+    </div>
+    <div class="note">
+        <p><strong>3. Active Recall:</strong> How do we prevent infinite recursion when a Job entity references an Employer entity that also references Job entities?</p>
+        <details>
+            <summary>Click to reveal answer</summary>
+            <ul>
+                <li>Use <code>@JsonIgnoreProperties("jobs")</code> on the Employer entity</li>
+                <li>Or implement <code>equals/hashCode</code> carefully</li>
+            </ul>
+        </details>
+    </div>
+    <div class="note">
+        <p><strong>4. Active Recall:</strong> What is the entry point class for starting the Spring Boot application, and where is it located?</p>
+        <details>
+            <summary>Click to reveal answer</summary>
+            <ul>
+                <li>Class: <code>Main.java</code></p>
+                <li>Location: <code>backend/src/main/java/za/ac/cput/Main.java</code></li>
+            </ul>
+        </details>
+    </div>
+    <div class="note">
+        <p><strong>1. Active Recall:</strong> Without looking back, what are the 4 main layers of our backend and what is the primary responsibility of the "Service" layer?</p>
+        <details>
+            <summary>Click to reveal answer</summary>
+            <ul>
+                <li>Controller: API Endpoints / Request Handling</li>
+                <li>Service: Business Logic & Orchestration (Manager)</li>
+                <li>Repository: Database Communication (Librarian)</li>
+                <li>Entity/Domain: Data structure (Books)</li>
+            </ul>
+        </details>
+    </div>
+
+    <p>Next: <a href="0002-api-endpoints-and-request-flow.html">0002 - API Endpoints & Request Flow</a></p>
+</body>
+</html>
+

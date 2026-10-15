@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>0003 - Full Request Flow Example (Apply for a Job)</title>
+    <link rel="stylesheet" href="../assets/base.css">
+</head>
+<body>
+    <h1>0003 - Full Request Flow Example (Apply for a Job)</h1>
+    <p><a href="../MISSION.md">Back to Mission</a> | <a href="0002-api-endpoints-and-request-flow.html">Previous</a></p>
+
+    <h2>Lesson Goal</h2>
+    <p>Trace the <strong>full journey</strong> of a job application, from the UI click to database storage and back.</p>
+
+    <div class="flow">
+        <strong>Scenario:</strong> A logged-in job seeker clicks "Apply Now" → Frontend sends request → Backend creates application → Employer gets notified → UI updates.
+        <div style="background:#f8f9fa;padding:1rem;border-radius:8px;font-family:monospace;white-space:pre;overflow-x:auto;">
+<pre style="margin:0;"><code>UI Click "Apply" ──▶ Frontend Service ──▶ Backend Controller ──▶ DB Save 
+                               │                                │
+                               └────────── Notification (Email/UI) ──▶ Employer</code></pre>
+</div>
+    </div>
+
+    <h2>Step-by-Step Breakdown</h2>
+    <ol>
+        <li>
+            <strong>UI Trigger</strong>
+            <p>On the job details page, the user clicks "Apply Now". The Angular component calls <code>ApplicationService.apply(jobId, notes)</code>.</p>
+            <div style="background:#f8f9fa;padding:1rem;border-radius:8px;font-family:monospace;white-space:pre;overflow-x:auto;max-height:100px;">
+<pre style="margin:0;"><code>┌─────────────────────────────────────────────────────────────┐
+│                    JOB PAGE COMPONENT                        │
+├─────────────────────────────────────────────────────────────┤
+│ [ Search ] [ Company Filter ] [ Salary Range ]               │
+│ [ Job Card 1 ]      [ Job Card 2 ]      [ Job Card 3 ]       │
+│ [ Apply Button ]    [ Apply Button ]    [ Apply Button ]    │
+└─────────────────────────────────────────────────────────────┘</code></pre>
+</div>
+        </li>
+        <li>
+            <strong>Frontend HTTP Call</strong>
+            <p><code>POST /api/applications/apply</code> with JSON body:<br><code>{ "jobSeekerId": "user123", "jobId": "j456", "notes": "Excited to apply!" }</code></p>
+            <p>Sent via Angular's <code>HttpClient</code>.</p>
+        </li>
+        <li>
+            <strong>Backend Controller</strong>
+            <p><code>JobApplicationController</code> receives the payload, validates fields, and calls <code>applicationService.apply()</code>.</p>
+            <pre><code>// Snippet from JobApplicationController.java
+public JobApplication apply(@RequestBody Map&lt;String, String&gt; payload) {
+    String jobSeekerId = payload.get("jobSeekerId");
+    // ... validation
+    return applicationService.apply(jobSeekerId, jobId, notes);
+}</code></pre>
+        </li>
+        <li>
+            <strong>Service Layer Magic</strong>
+            <p><code>ApplicationsServiceImpl</code> orchestrates the logic:</p>
+            <ul>
+                <li>Checks for duplicates: <code>findByJobSeekerAndJob()</code></li>
+                <li>Loads JobSeeker and Job entities from repositories</li>
+                <li>Builds <code>JobApplication</code> using <code>JobApplicationFactory</code></li>
+                <li>Saves to DB: <code>applicationRepository.save(app)</code></li>
+                <li><strong>Side Effect:</strong> Triggers employer notification via <code>notificationService</code></li>
+            </ul>
+            <div style="background:#f8f9fa;padding:1rem;border-radius:8px;font-family:monospace;white-space:pre;overflow-x:auto;max-height:150px;">
+<pre style="margin:0;"><code>Application Flow:
+├─ Service starts ──▶ Create JobApplication → Save to DB
+├─ Database updates  │
+└─ Service notifies  ──▶ Create Notification → Send to Employer
+
+Side Effect Chain:
+1. User clicks "Apply"
+2. Service: validate, duplicate check, save, notify
+3. UI updates: new application appears, button disabled
+4. Employer receives notification</code></pre>
+</div>
+        </li>
+        <li>
+            <strong>Database Persistence</strong>
+            <p><code>IJobApplicationRepository</code> (Spring Data JPA) saves the entity to MySQL. Relationships between <code>JobApplication</code>, <code>Job</code>, and <code>JobSeeker</code> are mapped via JPA annotations.</p>
+        </li>
+        <li>
+            <strong>JSON Response</strong>
+            <p>The saved entity (with related data) is serialized by Jackson and sent back as JSON:</p>
+            <pre><code>{
+  "id": "app789", "jobSeeker": { ... }, "job": { ... }, "notes": "Excited to apply!"
+}</code></pre>
+        </li>
+        <li>
+            <strong>Frontend Mapping & State Update</strong>
+            <p><code>ApplicationService</code> maps the JSON to a UI model, updates Angular signals, and returns an observable. The Dashboard component reacts by:</p>
+            <ul>
+                <li>Adding the application to the list</li>
+                <li>Disabling the "Apply" button</li>
+                <li>Showing a success toast</li>
+            </ul>
+        </li>
+    </ol>
+
+    <h2>Code Spotlight</h2>
+    <ul>
+        <li><strong>Backend Apply Logic:</strong> <code>ApplicationsServiceImpl.java:120-220</code> (duplicate check, save, notify)</li>
+        <li><strong>Factory Pattern:</strong> <code>JobApplicationFactory.buildJobApplication()</code></li>
+        <li><strong>Frontend Service:</strong> <code>application.service.ts:150-170</code> (HTTP call, mapping, signal update)</li>
+    </ul>
+
+    <h2>Key Takeaways</h2>
+    <ul>
+        <li><strong>Vertical Slice:</strong> A single request touches all layers (UI → DB → UI).</li>
+        <li><strong>Side Effects:</strong> One action (apply) triggers multiple outcomes (save, notify).</li>
+        <li><strong>State Management:</strong> Frontend uses signals to reactively update the UI.</li>
+    </ul>
+
+    <h2>Simple Explanation</h2>
+    <p>Imagine applying for a job is like sending a letter:</p>
+    <ol>
+        <li>You <strong>drop the letter</strong> (click "Apply").</li>
+        <li>The <strong>postman (HTTP)</strong> delivers it to the company (backend).</li>
+        <li>The <strong>HR manager (Service)</strong> checks if you already applied, files your letter (saves to DB), and tells the boss (employer notification).</li>
+        <li>The <strong>company (DB)</strong> keeps your letter safe.</li>
+        <li>You get a <strong>confirmation note (JSON response)</strong> and your mailbox (UI) updates.</li>
+    </ol>
+    <p>That's how your application travels through the system! 📬</p>
+
+    <h2>Knowledge Check (Multiple Questions)</h2>
+    <div class="note">
+        <p><strong>1. Active Recall:</strong> Name 2 side effects that happen inside <code>ApplicationsServiceImpl.apply()</code> when a job seeker applies for a job.</p>
+        <details>
+            <summary>Click to reveal answer</summary>
+            <ul>
+                <li>It checks for duplicate applications to prevent re-applying.</li>
+                <li>It triggers a notification to the employer via <code>notificationService</code>.</li>
+            </ul>
+        </details>
+    </div>
+    <div class="note">
+        <p><strong>2. Active Recall:</strong> Which component is responsible for creating a new <code>JobApplication</code> object before it's saved to the database?</p>
+        <details>
+            <summary>Click to reveal answer</summary>
+            <ul>
+                <li><code>JobApplicationFactory</code> (using the Factory Pattern).</li>
+            </ul>
+        </details>
+    </div>
+    <div class="note">
+        <p><strong>3. Active Recall:</strong> How does the frontend <code>ApplicationService</code> update the UI state after a successful application?</p>
+        <details>
+            <summary>Click to reveal answer</summary>
+            <ul>
+                <li>It updates Angular signals (e.g., <code>applicationsSignal</code>), which causes components to re-render automatically.</li>
+            </ul>
+        </details>
+    </div>
+    <div class="note">
+        <p><strong>4. Active Recall:</strong> What JSON body fields are typically sent in the <code>POST /api/applications/apply</code> request?</p>
+        <details>
+            <summary>Click to reveal answer</summary>
+            <ul>
+                <li><code>jobSeekerId</code>, <code>jobId</code>, and <code>notes</code>.</li>
+            </ul>
+        </details>
+    </div>
+
+    <p>Next: <a href="0004-frontend-consumption-how-it-connects.html">0004 - Frontend Consumption: How It Connects</a></p>
+</body>
+</html>
+

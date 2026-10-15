@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>0005 - Auth, Resume, Notifications, Errors & Guards</title>
+    <link rel="stylesheet" href="../assets/base.css">
+</head>
+<body>
+    <h1>0005 - Auth, Resume, Notifications, Errors & Guards</h1>
+    <p><a href="../MISSION.md">Back to Mission</a> | <a href="0004-frontend-consumption-how-it-connects.html">Previous</a> | <a href="../reference/quick-reference.html">Quick Reference</a></p>
+
+    <h2>Lesson Goal</h2>
+    <p>Master authentication, resume handling, notifications, error management, and route protection—critical for a secure and user-friendly app.</p>
+
+    <h2>Authentication Flow: How Users Log In</h2>
+    <div class="flow">
+        <strong>Key Point:</strong> Simple email/password auth. No JWT; frontend uses localStorage and route guards.
+        <div style="background:#f8f9fa;padding:1rem;border-radius:8px;font-family:monospace;white-space:pre;overflow-x:auto;">
+<pre style="margin:0;"><code>UI Action (Login) ──▶ Controller ──▶ Service ──▶ DB
+      ▲                                         │
+      └────── localStorage (AuthState) ◀────────┘
+                   │
+                   ▼
+      Guards check state → Route Access</code></pre>
+</div>
+    </div>
+
+    <h3>Backend Auth Endpoints</h3>
+    <ul>
+        <li><code>POST /api/users/signup</code>: Creates base user (email, password).</li>
+        <li><code>POST /api/users/login</code>: Validates credentials, returns user ID.</li>
+        <li><code>POST /api/jobseekers/create</code> or <code>/employers/create</code>: Role-specific profile creation.</li>
+    </ul>
+
+    <h3>Frontend AuthService</h3>
+    <ol>
+        <li><strong>Signup:</strong> Splits name, posts to role-specific endpoint, stores enriched user in localStorage.</li>
+        <li><strong>Login:</strong> Calls <code>/api/users/login</code>, then fetches full profile from <code>/api/jobseekers/read/{userId}</code> or <code>/api/employers/read/{userId}</code>.</li>
+    </ol>
+    <div style="background:#f8f9fa;padding:1rem;border-radius:8px;font-family:monospace;white-space:pre;overflow-x:auto;">
+<pre style="margin:0;"><code>1. Signup: POST /api/users/signup (Base User)
+2. Profile: POST /api/jobseekers/create (Enriched Data)
+3. Login: POST /api/users/login (Credentials)
+4. Session: GET /api/jobseekers/read/{id} (Current Profile)</code></pre>
+</div>
+
+    <h2>Resume Upload/Download: Handling Files</h2>
+    <h3>Backend (Multipart Handling)</h3>
+    <ul>
+        <li><code>POST /api/jobseekers/{userId}/resume</code>: Accepts <code>multipart/form-data</code>, saves file to server.</li>
+        <li><code>GET /api/jobseekers/{userId}/resume</code>: Returns file as <code>Resource</code> with correct MIME type.</li>
+    </ul>
+    <p>Config: <code>spring.servlet.multipart.max-file-size=5MB</code> in <code>application.properties</code>.</p>
+
+    <h3>Frontend (Angular HTTP)</h3>
+    <ul>
+        <li><code>uploadResume()</code>: Uses <code>HttpClient</code> with <code>FormData</code> to POST file.</li>
+        <li><code>downloadResume()</code>: GETs file as <code>Blob</code>, triggers browser download.</li>
+    </ul>
+    <div style="background:#f8f9fa;padding:1rem;border-radius:8px;font-family:monospace;white-space:pre;overflow-x:auto;">
+<pre style="margin:0;"><code>Upload:   FormData(file) ──▶ POST /api/jobseekers/{id}/resume ──▶ File System
+Download: GET /api/jobseekers/{id}/resume ──▶ Blob (PDF) ──▶ Browser View</code></pre>
+</div>
+
+    <h2>Notifications: Side Effects in Action</h2>
+    <p>Notifications are created in service layers after key actions:</p>
+    <ul>
+        <li><strong>New Job Posted:</strong> <code>JobServiceImpl</code> notifies all job seekers.</li>
+        <li><strong>Application Received:</strong> <code>ApplicationsServiceImpl</code> alerts the employer.</li>
+        <li><strong>Status Change:</strong> Applicant gets update when status changes.</li>
+    </ul>
+    <div style="background:#f8f9fa;padding:1rem;border-radius:8px;font-family:monospace;white-space:pre;overflow-x:auto;">
+<pre style="margin:0;"><code>JobServiceImpl.create()            ──▶ notify all job seekers
+ApplicationsServiceImpl.apply()    ──▶ notify job employer
+ApplicationsServiceImpl.update()   ──▶ notify applicant</code></pre>
+</div>
+
+    <h2>Global Error Handling: Centralized Control</h2>
+    <p><code>GlobalExceptionHandler</code> catches exceptions and returns structured JSON errors:</p>
+    <pre><code>@RestControllerAdvice
+public class GlobalExceptionHandler {
+    @ExceptionHandler(JobNotFoundException.class)
+    public ResponseEntity&lt;ErrorResponse&gt; handleJobNotFound(JobNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse("JOB_NOT_FOUND", ex.getMessage()));
+    }
+}</code></pre>
+    <p>Custom exceptions (e.g., <code>JobNotFoundException</code>) and validations (e.g., deadline checks) ensure clear error messages.</p>
+
+    <h2>Route Guards: Protecting Access</h2>
+    <ul>
+        <li><code>auth.guard.ts</code>: Checks <code>localStorage</code> for user; redirects to login if missing.</li>
+        <li><code>role.guard.ts</code>: Verifies user role matches route requirements (e.g., employer-only pages).</li>
+    </ul>
+    <div style="background:#f8f9fa;padding:1rem;border-radius:8px;font-family:monospace;white-space:pre;overflow-x:auto;">
+<pre style="margin:0;"><code>Route Request ──▶ auth.guard (Is Authenticated?) ──▶ role.guard (Has Role?) ──▶ Page Render
+                         │                                  │
+                         └────── Redirect /login ───────────┴────── Redirect /dashboard</code></pre>
+</div>
+
+    <h2>Simple Explanation</h2>
+    <p>Imagine a <strong>hotel</strong>:</p>
+    <ul>
+        <li><strong>Auth:</strong> Checking in (login) and getting a room key (localStorage).</li>
+        <li><strong>Resume:</strong> Storing luggage (upload) and retrieving it (download).</li>
+        <li><strong>Notifications:</strong> Messages slipped under your door (new job alerts, applicant notifications).</li>
+        <li><strong>Errors:</strong> Complaint desk handling issues (centralized error responses).</li>
+        <li><strong>Guards:</strong> Security checking keys (auth) and room access (role-based routes).</li>
+    </ul>
+    <p>Everything works together to keep the hotel (app) running smoothly! 🏨</p>
+
+    <h2>Key Takeaways</h2>
+    <ul>
+        <li>Auth uses simple email/password with role-specific profiles.</li>
+        <li>Resume handling uses multipart requests, limited to 5MB.</li>
+        <li>Notifications are decoupled side effects in services.</li>
+        <li>Global error handler ensures consistent error responses.</li>
+        <li>Route guards enforce authentication and authorization.</li>
+    </ul>
+
+    <h2>Knowledge Check</h2>
+    <div class="note">
+        <p><strong>5. Active Recall:</strong> What is the purpose of <code>JobSeekerController.uploadResume</code>, and what file size limit is configured in <code>application.properties</code>?</p>
+        <details>
+            <summary>Click to reveal answer</summary>
+            <ul>
+                <li>Purpose: Accepts <code>multipart/form-data</code> to save resume files to the server.</li>
+                <li>Limit: <code>spring.servlet.multipart.max-file-size=5MB</code> (and <code>max-request-size=5MB</code> for total uploads)</li>
+            </ul>
+        </details>
+    </div>
+
+    <p>Next: <a href="0006-live-demo-checklist.html">0006 - Live Demo Checklist</a></p>
+</body>
+</html>
+
